@@ -1,0 +1,15 @@
+[Unit]
+Description=ScanEat Backend
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/opt/scaneat-back
+EnvironmentFile=/opt/scaneat-back/scaneat.env
+ExecStart=/usr/bin/java -jar /opt/scaneat-back/app.jar
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
