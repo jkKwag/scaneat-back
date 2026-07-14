@@ -33,6 +33,7 @@ out/
 .env
 .env.local
 application-local.yml
+scaneat.env
 
 ### macOS ###
 .DS_Store
