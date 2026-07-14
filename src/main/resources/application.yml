@@ -1,0 +1,39 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: scaneat-back
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        default_schema: public
+    show-sql: false
+  jackson:
+    default-property-inclusion: non_null
+
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+
+toss:
+  secret-key: ${TOSS_SECRET_KEY}
+  base-url: https://api.tosspayments.com
+
+gemini:
+  api-key: ${GEMINI_API_KEY}
+  model: gemini-2.0-flash
+  base-url: https://generativelanguage.googleapis.com/v1beta
+
+logging:
+  level:
+    com.scaneat.back: INFO
