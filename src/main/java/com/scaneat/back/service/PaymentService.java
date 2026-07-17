@@ -16,7 +16,6 @@ import com.scaneat.back.repository.UsrOrderRepository;
 import com.scaneat.back.repository.UsrPaymentOrderRepository;
 import com.scaneat.back.repository.UsrPaymentPgRepository;
 import com.scaneat.back.repository.UsrPaymentRepository;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
@@ -105,9 +104,7 @@ public class PaymentService {
 	}
 
 	public List<PaymentResponse> getPaymentsByUuid(String uuid) {
-		// 24시간 영업 매장도 있어 최소 이틀(어제 00:00부터 지금까지)은 조회 가능해야 함
-		LocalDateTime from = LocalDate.now().minusDays(1).atStartOfDay();
-		return usrPaymentRepository.findByUuidAndRegDtGreaterThanEqualOrderByRegDtDesc(uuid, from).stream()
+		return usrPaymentRepository.findRecentByUuid(uuid).stream()
 				.map(payment -> getPayment(payment.getPaymentKey()))
 				.toList();
 	}
