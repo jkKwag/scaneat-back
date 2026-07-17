@@ -128,7 +128,13 @@ public class OrderService {
 	}
 
 	private String generateOrderNo() {
-		String suffix = String.valueOf(ThreadLocalRandom.current().nextInt(1000, 10000));
-		return "O" + LocalDateTime.now().format(ORDER_NO_FORMAT) + suffix;
+		String orderNo;
+		int attempts = 0;
+		do {
+			String suffix = String.valueOf(ThreadLocalRandom.current().nextInt(1000, 10000));
+			orderNo = "O" + LocalDateTime.now().format(ORDER_NO_FORMAT) + suffix;
+			attempts++;
+		} while (usrOrderRepository.existsById(orderNo) && attempts < 5);
+		return orderNo;
 	}
 }
