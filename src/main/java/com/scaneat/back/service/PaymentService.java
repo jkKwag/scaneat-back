@@ -76,7 +76,7 @@ public class PaymentService {
 				.lastTransactionKey((String) result.get("lastTransactionKey"))
 				.requestedDt(parseTossDateTime((String) result.get("requestedAt")))
 				.receiptUrl(receipt != null ? (String) receipt.get("url") : null)
-				.cardCompany(card != null ? (String) card.get("company") : null)
+				.issuerCode(card != null && card.get("issuerCode") != null ? String.valueOf(card.get("issuerCode")) : null)
 				.cardNo(card != null ? (String) card.get("number") : null)
 				.approveNo(card != null ? (String) card.get("approveNo") : null)
 				.installmentMonths(card != null ? toInteger(card.get("installmentPlanMonths")) : null)
