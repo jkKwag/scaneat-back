@@ -7,15 +7,13 @@ import com.scaneat.back.common.exception.BusinessException;
 import com.scaneat.back.dto.ai.AiChatRequest;
 import com.scaneat.back.dto.ai.AiChatResponse;
 import com.scaneat.back.dto.ai.CartItemDto;
-import com.scaneat.back.dto.reservation.ReservationRequest;
-import com.scaneat.back.dto.reservation.ReservationResponse;
-import com.scaneat.back.dto.reservation.ReservationUpdateRequest;
 import com.scaneat.back.entity.BizMenu;
 import com.scaneat.back.repository.BizMenuRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +32,6 @@ public class AiChatService {
 
 	private final GeminiClient geminiClient;
 	private final BizMenuRepository bizMenuRepository;
-	private final ReservationService reservationService;
 
 	public AiChatResponse chat(AiChatRequest request) {
 		List<CartItemDto> cart = request.cart() != null ? new ArrayList<>(request.cart()) : new ArrayList<>();
@@ -52,7 +49,7 @@ public class AiChatService {
 			case "remove_item" -> handleRemoveItem(functionCall, cart);
 			case "clear_cart" -> handleClearCart(cart);
 			case "request_checkout" -> handleRequestCheckout(cart);
-			case "request_reservation" -> handleRequestReservation(request, functionCall, cart);
+			case "request_reservation" -> handleRequestReservation(functionCall, cart);
 			case "modify_reservation" -> handleModifyReservation(functionCall, cart);
 			default -> new AiChatResponse(result.text(), functionCall.name(), null, cart);
 		};
@@ -112,30 +109,25 @@ public class AiChatService {
 		return new AiChatResponse(reply, "request_checkout", Map.of("totalAmount", total), cart);
 	}
 
-	private AiChatResponse handleRequestReservation(AiChatRequest request, GeminiFunctionCall call, List<CartItemDto> cart) {
+	private AiChatResponse handleRequestReservation(GeminiFunctionCall call, List<CartItemDto> cart) {
 		Map<String, Object> args = call.args() != null ? call.args() : Map.of();
 		String guestName = (String) args.get("guestName");
 		String rsvnDtRaw = (String) args.get("rsvnDt");
 		if (guestName == null || rsvnDtRaw == null) {
 			throw new BusinessException("예약자명과 예약 일시가 필요합니다.");
 		}
+		parseDateTime(rsvnDtRaw);
 
-		ReservationRequest reservationRequest = new ReservationRequest(
-				request.uuid(),
-				request.bizRegNo(),
-				guestName,
-				(String) args.get("guestTel"),
-				parseDateTime(rsvnDtRaw),
-				(String) args.get("seatNo"),
-				args.get("partySize") != null ? ((Number) args.get("partySize")).intValue() : null,
-				(String) args.get("memo")
-		);
+		Map<String, Object> intent = new LinkedHashMap<>();
+		intent.put("guestName", guestName);
+		intent.put("guestTel", args.get("guestTel"));
+		intent.put("rsvnDt", rsvnDtRaw);
+		intent.put("seatNo", args.get("seatNo"));
+		intent.put("partySize", args.get("partySize"));
+		intent.put("memo", args.get("memo"));
 
-		ReservationResponse reservation = reservationService.createReservation(reservationRequest);
-		String reply = "%s님, %s에 예약이 접수되었어요. 예약번호는 %s입니다.".formatted(
-				guestName, reservation.rsvnDt(), reservation.rsvnNo());
-
-		return new AiChatResponse(reply, "request_reservation", Map.of("reservation", reservation), cart);
+		String reply = "%s님, %s 예약 도와드릴게요. 내용 확인하시고 동의 후 예약을 확정해주세요.".formatted(guestName, rsvnDtRaw);
+		return new AiChatResponse(reply, "request_reservation", intent, cart);
 	}
 
 	private AiChatResponse handleModifyReservation(GeminiFunctionCall call, List<CartItemDto> cart) {
@@ -144,21 +136,22 @@ public class AiChatService {
 		if (rsvnNo == null) {
 			throw new BusinessException("수정할 예약 번호가 필요합니다.");
 		}
+		if (args.get("rsvnDt") != null) {
+			parseDateTime((String) args.get("rsvnDt"));
+		}
 
-		ReservationUpdateRequest updateRequest = new ReservationUpdateRequest(
-				(String) args.get("guestName"),
-				(String) args.get("guestTel"),
-				args.get("rsvnDt") != null ? parseDateTime((String) args.get("rsvnDt")) : null,
-				(String) args.get("seatNo"),
-				args.get("partySize") != null ? ((Number) args.get("partySize")).intValue() : null,
-				(String) args.get("memo"),
-				(String) args.get("status")
-		);
+		Map<String, Object> intent = new LinkedHashMap<>();
+		intent.put("rsvnNo", rsvnNo);
+		intent.put("guestName", args.get("guestName"));
+		intent.put("guestTel", args.get("guestTel"));
+		intent.put("rsvnDt", args.get("rsvnDt"));
+		intent.put("seatNo", args.get("seatNo"));
+		intent.put("partySize", args.get("partySize"));
+		intent.put("memo", args.get("memo"));
+		intent.put("status", args.get("status"));
 
-		ReservationResponse reservation = reservationService.updateReservation(rsvnNo, updateRequest);
-		String reply = "예약번호 %s의 예약 내용을 수정했어요.".formatted(rsvnNo);
-
-		return new AiChatResponse(reply, "modify_reservation", Map.of("reservation", reservation), cart);
+		String reply = "예약번호 %s 변경 내용을 확인했어요. 동의 후 반영해드릴게요.".formatted(rsvnNo);
+		return new AiChatResponse(reply, "modify_reservation", intent, cart);
 	}
 
 	private LocalDateTime parseDateTime(String raw) {
