@@ -23,9 +23,11 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -46,6 +48,7 @@ public class PaymentService {
 
 		Map<String, Object> result = tossPaymentsClient.confirmPayment(
 				request.paymentKey(), request.orderId(), request.amount());
+		log.info("[Toss] confirm raw response: {}", result);
 
 		LocalDateTime now = LocalDateTime.now();
 		UsrOrder firstOrder = orders.get(0);
