@@ -13,6 +13,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 
 @Entity
 @Table(name = "tb_usr_order")
@@ -35,6 +36,10 @@ public class UsrOrder {
 
 	@Column(name = "seat_no", length = 10)
 	private String seatNo;
+
+	@ColumnDefault("'DINE_IN'")
+	@Column(name = "order_typ_cd", length = 10, nullable = false)
+	private String orderTypCd;
 
 	@Column(name = "total_amount", nullable = false)
 	private BigDecimal totalAmount;
