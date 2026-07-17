@@ -17,7 +17,7 @@ spring:
       hibernate:
         format_sql: true
         default_schema: public
-    show-sql: false
+    show-sql: true
   jackson:
     default-property-inclusion: non_null
 
@@ -37,3 +37,5 @@ gemini:
 logging:
   level:
     com.scaneat.back: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
