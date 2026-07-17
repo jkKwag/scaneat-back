@@ -16,6 +16,7 @@ import com.scaneat.back.repository.UsrOrderRepository;
 import com.scaneat.back.repository.UsrPaymentOrderRepository;
 import com.scaneat.back.repository.UsrPaymentPgRepository;
 import com.scaneat.back.repository.UsrPaymentRepository;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
@@ -74,6 +75,11 @@ public class PaymentService {
 				.receiptUrl(receipt != null ? (String) receipt.get("url") : null)
 				.cardCompany(card != null ? (String) card.get("company") : null)
 				.cardNo(card != null ? (String) card.get("number") : null)
+				.approveNo(card != null ? (String) card.get("approveNo") : null)
+				.installmentMonths(card != null ? toInteger(card.get("installmentPlanMonths")) : null)
+				.suppliedAmount(toBigDecimal(result.get("suppliedAmount")))
+				.vat(toBigDecimal(result.get("vat")))
+				.orderName((String) result.get("orderName"))
 				.regDt(now)
 				.build();
 		usrPaymentPgRepository.save(pg);
@@ -118,5 +124,13 @@ public class PaymentService {
 		} catch (DateTimeParseException ex) {
 			throw new BusinessException("결제 일시 형식을 해석할 수 없습니다: " + raw);
 		}
+	}
+
+	private BigDecimal toBigDecimal(Object value) {
+		return value instanceof Number number ? new BigDecimal(number.toString()) : null;
+	}
+
+	private Integer toInteger(Object value) {
+		return value instanceof Number number ? number.intValue() : null;
 	}
 }

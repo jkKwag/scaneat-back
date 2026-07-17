@@ -4,6 +4,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -38,6 +39,21 @@ public class UsrPaymentPg {
 
 	@Column(name = "card_no", length = 30)
 	private String cardNo;
+
+	@Column(name = "approve_no", length = 30)
+	private String approveNo;
+
+	@Column(name = "installment_months")
+	private Integer installmentMonths;
+
+	@Column(name = "supplied_amount")
+	private BigDecimal suppliedAmount;
+
+	@Column(name = "vat")
+	private BigDecimal vat;
+
+	@Column(name = "order_name", length = 200)
+	private String orderName;
 
 	@Column(name = "reg_dt", nullable = false)
 	private LocalDateTime regDt;
