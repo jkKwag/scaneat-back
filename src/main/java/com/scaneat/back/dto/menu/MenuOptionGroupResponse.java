@@ -6,7 +6,9 @@ import java.util.List;
 public record MenuOptionGroupResponse(
 		String optGrpCd,
 		String optGrpNm,
+		String optType,
 		String requiredYn,
+		String useYn,
 		Integer minSelCnt,
 		Integer maxSelCnt,
 		Integer sortOrd,
@@ -16,7 +18,9 @@ public record MenuOptionGroupResponse(
 		return new MenuOptionGroupResponse(
 				grp.getOptGrpCd(),
 				grp.getOptGrpNm(),
+				grp.getOptType(),
 				grp.getRequiredYn(),
+				grp.getUseYn(),
 				grp.getMinSelCnt(),
 				grp.getMaxSelCnt(),
 				grp.getSortOrd(),
