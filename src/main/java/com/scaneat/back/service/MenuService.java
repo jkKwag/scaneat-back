@@ -6,6 +6,7 @@ import com.scaneat.back.entity.BizMenuOptCd;
 import com.scaneat.back.entity.BizMenuOptGrp;
 import com.scaneat.back.repository.BizMenuOptCdRepository;
 import com.scaneat.back.repository.BizMenuOptGrpRepository;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -22,20 +23,20 @@ public class MenuService {
 	private final BizMenuOptCdRepository bizMenuOptCdRepository;
 
 	public List<MenuOptionGroupResponse> getMenuOptions(String menuCd) {
-		List<BizMenuOptGrp> groups = bizMenuOptGrpRepository.findByMenuCdOrderBySortOrdAsc(menuCd);
-		if (groups.isEmpty()) {
+		List<BizMenuOptCd> optionCodes = bizMenuOptCdRepository.findByMenuCdAndUseYnOrderBySortOrdAsc(menuCd, "Y");
+		if (optionCodes.isEmpty()) {
 			return List.of();
 		}
 
-		List<String> groupCds = groups.stream().map(BizMenuOptGrp::getOptGrpCd).toList();
-		Map<String, List<MenuOptionResponse>> optionsByGroupCd = bizMenuOptCdRepository
-				.findByOptGrpCdInOrderBySortOrdAsc(groupCds).stream()
+		Map<String, List<MenuOptionResponse>> optionsByGroupCd = optionCodes.stream()
 				.collect(Collectors.groupingBy(BizMenuOptCd::getOptGrpCd,
 						Collectors.mapping(MenuOptionResponse::from, Collectors.toList())));
 
+		List<BizMenuOptGrp> groups = bizMenuOptGrpRepository.findAllById(optionsByGroupCd.keySet());
+
 		return groups.stream()
-				.map(grp -> MenuOptionGroupResponse.from(grp,
-						optionsByGroupCd.getOrDefault(grp.getOptGrpCd(), List.of())))
+				.sorted(Comparator.comparing(BizMenuOptGrp::getSortOrd, Comparator.nullsLast(Integer::compareTo)))
+				.map(grp -> MenuOptionGroupResponse.from(grp, optionsByGroupCd.getOrDefault(grp.getOptGrpCd(), List.of())))
 				.toList();
 	}
 }

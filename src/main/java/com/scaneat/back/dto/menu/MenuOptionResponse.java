@@ -7,14 +7,16 @@ public record MenuOptionResponse(
 		String optCd,
 		String optNm,
 		BigDecimal addPrice,
-		Integer sortOrd
+		Integer sortOrd,
+		String useYn
 ) {
 	public static MenuOptionResponse from(BizMenuOptCd optCd) {
 		return new MenuOptionResponse(
 				optCd.getOptCd(),
 				optCd.getOptNm(),
 				optCd.getAddPrice(),
-				optCd.getSortOrd()
+				optCd.getSortOrd(),
+				optCd.getUseYn()
 		);
 	}
 }
