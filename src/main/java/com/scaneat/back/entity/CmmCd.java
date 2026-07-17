@@ -26,6 +26,9 @@ public class CmmCd {
 	@Column(name = "cd_nm", length = 100, nullable = false)
 	private String cdNm;
 
+	@Column(name = "cd_nm_en", length = 100)
+	private String cdNmEn;
+
 	@Column(name = "sort_ord")
 	private Integer sortOrd;
 
@@ -34,6 +37,36 @@ public class CmmCd {
 
 	@Column(name = "rmrk", length = 200)
 	private String rmrk;
+
+	@Column(name = "rmrk1", length = 200)
+	private String rmrk1;
+
+	@Column(name = "rmrk2", length = 200)
+	private String rmrk2;
+
+	@Column(name = "rmrk3", length = 200)
+	private String rmrk3;
+
+	@Column(name = "rmrk4", length = 200)
+	private String rmrk4;
+
+	@Column(name = "rmrk5", length = 200)
+	private String rmrk5;
+
+	@Column(name = "rmrk6", length = 200)
+	private String rmrk6;
+
+	@Column(name = "rmrk7", length = 200)
+	private String rmrk7;
+
+	@Column(name = "rmrk8", length = 200)
+	private String rmrk8;
+
+	@Column(name = "rmrk9", length = 200)
+	private String rmrk9;
+
+	@Column(name = "rmrk10", length = 200)
+	private String rmrk10;
 
 	@Column(name = "reg_usr_id", length = 50)
 	private String regUsrId;
