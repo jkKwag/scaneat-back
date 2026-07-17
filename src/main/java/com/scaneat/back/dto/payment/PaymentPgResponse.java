@@ -1,6 +1,7 @@
 package com.scaneat.back.dto.payment;
 
 import com.scaneat.back.entity.UsrPaymentPg;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public record PaymentPgResponse(
@@ -8,7 +9,12 @@ public record PaymentPgResponse(
 		LocalDateTime requestedDt,
 		String receiptUrl,
 		String cardCompany,
-		String cardNo
+		String cardNo,
+		String approveNo,
+		Integer installmentMonths,
+		BigDecimal suppliedAmount,
+		BigDecimal vat,
+		String orderName
 ) {
 	public static PaymentPgResponse from(UsrPaymentPg pg) {
 		if (pg == null) {
@@ -19,7 +25,12 @@ public record PaymentPgResponse(
 				pg.getRequestedDt(),
 				pg.getReceiptUrl(),
 				pg.getCardCompany(),
-				pg.getCardNo()
+				pg.getCardNo(),
+				pg.getApproveNo(),
+				pg.getInstallmentMonths(),
+				pg.getSuppliedAmount(),
+				pg.getVat(),
+				pg.getOrderName()
 		);
 	}
 }
