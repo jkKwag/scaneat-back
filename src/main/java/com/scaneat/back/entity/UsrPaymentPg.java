@@ -34,8 +34,8 @@ public class UsrPaymentPg {
 	@Column(name = "receipt_url", length = 500)
 	private String receiptUrl;
 
-	@Column(name = "card_company", length = 50)
-	private String cardCompany;
+	@Column(name = "issuer_code", length = 10)
+	private String issuerCode;
 
 	@Column(name = "card_no", length = 30)
 	private String cardNo;
