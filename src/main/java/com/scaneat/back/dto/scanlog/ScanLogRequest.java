@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 
 public record ScanLogRequest(
 		@NotBlank(message = "uuid는 필수입니다.") String uuid,
-		@NotBlank(message = "bizRegNo는 필수입니다.") String bizRegNo
+		@NotBlank(message = "bizRegNo는 필수입니다.") String bizRegNo,
+		String vstTypCd
 ) {
 }

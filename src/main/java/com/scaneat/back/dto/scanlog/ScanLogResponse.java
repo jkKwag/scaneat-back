@@ -7,9 +7,10 @@ public record ScanLogResponse(
 		Long id,
 		String uuid,
 		String bizRegNo,
-		LocalDateTime scanDt
+		LocalDateTime vstDt,
+		String vstTypCd
 ) {
 	public static ScanLogResponse from(UsrScanLog log) {
-		return new ScanLogResponse(log.getId(), log.getUuid(), log.getBizRegNo(), log.getScanDt());
+		return new ScanLogResponse(log.getId(), log.getUuid(), log.getBizRegNo(), log.getVstDt(), log.getVstTypCd());
 	}
 }

@@ -26,12 +26,33 @@ public class UsrScanLog {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "uuid", length = 100, nullable = false)
+	@Column(name = "uuid", length = 36, nullable = false)
 	private String uuid;
 
-	@Column(name = "biz_reg_no", length = 20, nullable = false)
+	@Column(name = "biz_reg_no", length = 10, nullable = false)
 	private String bizRegNo;
 
-	@Column(name = "scan_dt", nullable = false)
-	private LocalDateTime scanDt;
+	@Column(name = "vst_dt", nullable = false)
+	private LocalDateTime vstDt;
+
+	@Column(name = "vst_typ_cd", length = 10, nullable = false)
+	private String vstTypCd;
+
+	@Column(name = "reg_usr_id", length = 50)
+	private String regUsrId;
+
+	@Column(name = "reg_dt", nullable = false)
+	private LocalDateTime regDt;
+
+	@Column(name = "reg_ip", length = 50)
+	private String regIp;
+
+	@Column(name = "upd_usr_id", length = 50)
+	private String updUsrId;
+
+	@Column(name = "upd_dt")
+	private LocalDateTime updDt;
+
+	@Column(name = "upd_ip", length = 50)
+	private String updIp;
 }
