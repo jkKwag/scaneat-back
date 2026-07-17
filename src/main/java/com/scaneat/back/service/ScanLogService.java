@@ -18,17 +18,21 @@ public class ScanLogService {
 	private final UsrScanLogRepository usrScanLogRepository;
 
 	public List<ScanLogResponse> getScanLogs(String uuid) {
-		return usrScanLogRepository.findByUuidOrderByScanDtDesc(uuid).stream()
+		return usrScanLogRepository.findByUuidOrderByVstDtDesc(uuid).stream()
 				.map(ScanLogResponse::from)
 				.toList();
 	}
 
 	@Transactional
 	public ScanLogResponse createScanLog(ScanLogRequest request) {
+		LocalDateTime now = LocalDateTime.now();
 		UsrScanLog log = UsrScanLog.builder()
 				.uuid(request.uuid())
 				.bizRegNo(request.bizRegNo())
-				.scanDt(LocalDateTime.now())
+				.vstDt(now)
+				.vstTypCd(request.vstTypCd() != null && !request.vstTypCd().isBlank() ? request.vstTypCd() : "url")
+				.regUsrId("guest")
+				.regDt(now)
 				.build();
 		return ScanLogResponse.from(usrScanLogRepository.save(log));
 	}

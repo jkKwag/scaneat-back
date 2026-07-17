@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface UsrScanLogRepository extends JpaRepository<UsrScanLog, Long> {
 
-	List<UsrScanLog> findByUuidOrderByScanDtDesc(String uuid);
+	List<UsrScanLog> findByUuidOrderByVstDtDesc(String uuid);
 
-	List<UsrScanLog> findByBizRegNoOrderByScanDtDesc(String bizRegNo);
+	List<UsrScanLog> findByBizRegNoOrderByVstDtDesc(String bizRegNo);
 }
