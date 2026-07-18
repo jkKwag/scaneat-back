@@ -95,6 +95,7 @@ public class OrderService {
 				.bizRegNo(request.bizRegNo())
 				.seatNo(request.seatNo())
 				.orderTypCd(request.orderTypCd() != null && !request.orderTypCd().isBlank() ? request.orderTypCd() : "DINE_IN")
+				.rsvnNo(request.rsvnNo())
 				.totalAmount(totalAmount)
 				.status(OrderStatus.PENDING)
 				.regUsrId("guest")
