@@ -29,6 +29,11 @@ public class OrderController {
 		return ApiResponse.ok(orderService.getOrdersByUuid(uuid));
 	}
 
+	@GetMapping("/biz/{bizRegNo}")
+	public ApiResponse<List<OrderResponse>> getOrdersByBiz(@PathVariable String bizRegNo) {
+		return ApiResponse.ok(orderService.getOrdersByBiz(bizRegNo));
+	}
+
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
 	public ApiResponse<OrderResponse> createOrder(@Valid @RequestBody OrderRequest request) {

@@ -52,6 +52,12 @@ public class OrderService {
 				.toList();
 	}
 
+	public List<OrderResponse> getOrdersByBiz(String bizRegNo) {
+		return usrOrderRepository.findByBizRegNoOrderByRegDtDesc(bizRegNo).stream()
+				.map(this::buildOrderResponse)
+				.toList();
+	}
+
 	@Transactional
 	public OrderResponse createOrder(OrderRequest request) {
 		LocalDateTime now = LocalDateTime.now();
