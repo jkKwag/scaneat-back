@@ -40,8 +40,8 @@ public class UsrRsvn {
 	@Column(name = "guest_name", length = 50)
 	private String guestName;
 
-	@Column(name = "guest_tel", length = 20)
-	private String guestTel;
+	@Column(name = "guest_phone")
+	private String guestPhone;
 
 	@Column(name = "rsvn_dt")
 	private LocalDateTime rsvnDt;
