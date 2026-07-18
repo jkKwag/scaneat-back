@@ -40,6 +40,12 @@ public class AdminUsr {
 	@Column(name = "admin_nm", length = 50)
 	private String adminNm;
 
+	@Column(name = "mobile_tel", length = 20)
+	private String mobileTel;
+
+	@Column(name = "tel", length = 20)
+	private String tel;
+
 	@ColumnDefault("'Y'")
 	@Column(name = "use_yn", length = 1, nullable = false)
 	private String useYn;
