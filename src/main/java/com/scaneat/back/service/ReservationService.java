@@ -22,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class ReservationService {
 
-	private static final DateTimeFormatter RSVN_NO_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+	private static final DateTimeFormatter RSVN_NO_DATE_FORMAT = DateTimeFormatter.ofPattern("yyMMdd");
 
 	private final UsrRsvnRepository usrRsvnRepository;
 
@@ -115,7 +115,13 @@ public class ReservationService {
 	}
 
 	private String generateRsvnNo() {
-		String suffix = String.valueOf(ThreadLocalRandom.current().nextInt(1000, 10000));
-		return "R" + LocalDateTime.now().format(RSVN_NO_FORMAT) + suffix;
+		String rsvnNo;
+		int attempts = 0;
+		do {
+			String suffix = String.format("%05d", ThreadLocalRandom.current().nextInt(100000));
+			rsvnNo = "R" + LocalDate.now().format(RSVN_NO_DATE_FORMAT) + "-" + suffix;
+			attempts++;
+		} while (usrRsvnRepository.existsById(rsvnNo) && attempts < 5);
+		return rsvnNo;
 	}
 }
