@@ -5,6 +5,7 @@ import com.scaneat.back.dto.biz.BizCatResponse;
 import com.scaneat.back.dto.biz.BizHourRequest;
 import com.scaneat.back.dto.biz.BizHourResponse;
 import com.scaneat.back.dto.biz.BizMenuResponse;
+import com.scaneat.back.dto.biz.BizPageResponse;
 import com.scaneat.back.dto.biz.BizResponse;
 import com.scaneat.back.dto.biz.BizRsvnStdRequest;
 import com.scaneat.back.dto.biz.BizRsvnStdResponse;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -28,8 +30,10 @@ public class BizController {
 	private final BizService bizService;
 
 	@GetMapping
-	public ApiResponse<List<BizResponse>> getAllBiz() {
-		return ApiResponse.ok(bizService.getAllBiz());
+	public ApiResponse<BizPageResponse> getBizPage(
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "10") int size) {
+		return ApiResponse.ok(bizService.getBizPage(page, size));
 	}
 
 	@GetMapping("/{bizno}")

@@ -5,10 +5,12 @@ import com.scaneat.back.dto.biz.BizCatResponse;
 import com.scaneat.back.dto.biz.BizHourRequest;
 import com.scaneat.back.dto.biz.BizHourResponse;
 import com.scaneat.back.dto.biz.BizMenuResponse;
+import com.scaneat.back.dto.biz.BizPageResponse;
 import com.scaneat.back.dto.biz.BizResponse;
 import com.scaneat.back.dto.biz.BizRsvnStdRequest;
 import com.scaneat.back.dto.biz.BizRsvnStdResponse;
 import com.scaneat.back.dto.biz.BizSeatResponse;
+import com.scaneat.back.entity.Biz;
 import com.scaneat.back.entity.BizHourStd;
 import com.scaneat.back.entity.BizHourStdId;
 import com.scaneat.back.entity.BizRsvnStd;
@@ -21,6 +23,8 @@ import com.scaneat.back.repository.BizSeatRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,10 +41,10 @@ public class BizService {
 	private final BizRsvnStdRepository bizRsvnStdRepository;
 	private final BizSeatRepository bizSeatRepository;
 
-	public List<BizResponse> getAllBiz() {
-		return bizRepository.findAll(Sort.by("bizNm")).stream()
-				.map(BizResponse::from)
-				.toList();
+	public BizPageResponse getBizPage(int page, int size) {
+		Page<Biz> result = bizRepository.findAll(PageRequest.of(page, size, Sort.by("bizNm")));
+		List<BizResponse> items = result.getContent().stream().map(BizResponse::from).toList();
+		return new BizPageResponse(items, result.hasNext());
 	}
 
 	public BizResponse getBiz(String bizRegNo) {
