@@ -26,11 +26,15 @@ public class ConsentService {
 
 	@Transactional
 	public ConsentResponse createConsent(ConsentRequest request) {
+		LocalDateTime now = LocalDateTime.now();
 		UsrPrvCns consent = UsrPrvCns.builder()
 				.uuid(request.uuid())
 				.bizRegNo(request.bizRegNo())
 				.guestName(request.guestName())
-				.consentAt(LocalDateTime.now())
+				.guestPhone(request.guestPhone())
+				.consentAt(now)
+				.regUsrId("guest")
+				.regDt(now)
 				.build();
 		return ConsentResponse.from(usrPrvCnsRepository.save(consent));
 	}
