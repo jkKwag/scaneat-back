@@ -33,6 +33,10 @@ public class BizRsvnStd {
 	@Column(name = "time_unit_min", nullable = false)
 	private Integer timeUnitMin;
 
+	@ColumnDefault("90")
+	@Column(name = "use_time_min", nullable = false)
+	private Integer useTimeMin;
+
 	@Column(name = "min_party_size")
 	private Integer minPartySize;
 

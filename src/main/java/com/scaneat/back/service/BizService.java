@@ -99,6 +99,7 @@ public class BizService {
 				.bizRegNo(bizRegNo)
 				.useYn(request.useYn() != null ? request.useYn() : "Y")
 				.timeUnitMin(request.timeUnitMin() != null ? request.timeUnitMin() : 30)
+				.useTimeMin(request.useTimeMin() != null ? request.useTimeMin() : 90)
 				.minPartySize(request.minPartySize())
 				.maxPartySize(request.maxPartySize())
 				.maxAdvanceDays(request.maxAdvanceDays())
