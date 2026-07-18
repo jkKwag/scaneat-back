@@ -14,7 +14,7 @@ import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 
 @Entity
-@Table(name = "tb_biz_hour_std")
+@Table(name = "tb_std_biz_hour")
 @Getter
 @Setter
 @NoArgsConstructor
