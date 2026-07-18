@@ -7,7 +7,9 @@ public record BizSeatResponse(
 		String seatNm,
 		Integer capacity,
 		String seatDesc,
-		String imgUrl
+		String imgUrl,
+		Integer sortOrd,
+		String useYn
 ) {
 	public static BizSeatResponse from(BizSeat seat) {
 		return new BizSeatResponse(
@@ -15,7 +17,9 @@ public record BizSeatResponse(
 				seat.getSeatNm(),
 				seat.getCapacity(),
 				seat.getSeatDesc(),
-				seat.getImgUrl()
+				seat.getImgUrl(),
+				seat.getSortOrd(),
+				seat.getUseYn()
 		);
 	}
 }
