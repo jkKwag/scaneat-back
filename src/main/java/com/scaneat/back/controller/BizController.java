@@ -4,6 +4,7 @@ import com.scaneat.back.common.ApiResponse;
 import com.scaneat.back.dto.biz.BizCatResponse;
 import com.scaneat.back.dto.biz.BizHourRequest;
 import com.scaneat.back.dto.biz.BizHourResponse;
+import com.scaneat.back.dto.biz.BizMenuRequest;
 import com.scaneat.back.dto.biz.BizMenuResponse;
 import com.scaneat.back.dto.biz.BizPageResponse;
 import com.scaneat.back.dto.biz.BizResponse;
@@ -14,8 +15,10 @@ import com.scaneat.back.service.BizService;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -49,6 +52,23 @@ public class BizController {
 	@GetMapping("/{bizno}/menus")
 	public ApiResponse<List<BizMenuResponse>> getMenus(@PathVariable String bizno) {
 		return ApiResponse.ok(bizService.getMenus(bizno));
+	}
+
+	@PostMapping("/{bizno}/menus")
+	public ApiResponse<BizMenuResponse> createMenu(@PathVariable String bizno, @RequestBody BizMenuRequest request) {
+		return ApiResponse.ok(bizService.createMenu(bizno, request));
+	}
+
+	@PutMapping("/{bizno}/menus/{menuCd}")
+	public ApiResponse<BizMenuResponse> updateMenu(
+			@PathVariable String bizno, @PathVariable String menuCd, @RequestBody BizMenuRequest request) {
+		return ApiResponse.ok(bizService.updateMenu(bizno, menuCd, request));
+	}
+
+	@DeleteMapping("/{bizno}/menus/{menuCd}")
+	public ApiResponse<Void> deleteMenu(@PathVariable String bizno, @PathVariable String menuCd) {
+		bizService.deleteMenu(bizno, menuCd);
+		return ApiResponse.ok(null);
 	}
 
 	@GetMapping("/{bizno}/hours")
