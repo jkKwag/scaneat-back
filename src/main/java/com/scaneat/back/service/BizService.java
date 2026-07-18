@@ -4,6 +4,7 @@ import com.scaneat.back.common.exception.ResourceNotFoundException;
 import com.scaneat.back.dto.biz.BizCatResponse;
 import com.scaneat.back.dto.biz.BizHourRequest;
 import com.scaneat.back.dto.biz.BizHourResponse;
+import com.scaneat.back.dto.biz.BizMenuRequest;
 import com.scaneat.back.dto.biz.BizMenuResponse;
 import com.scaneat.back.dto.biz.BizPageResponse;
 import com.scaneat.back.dto.biz.BizResponse;
@@ -13,7 +14,9 @@ import com.scaneat.back.dto.biz.BizSeatResponse;
 import com.scaneat.back.entity.Biz;
 import com.scaneat.back.entity.BizHourStd;
 import com.scaneat.back.entity.BizHourStdId;
+import com.scaneat.back.entity.BizMenu;
 import com.scaneat.back.entity.BizRsvnStd;
+import com.scaneat.back.common.exception.ResourceNotFoundException;
 import com.scaneat.back.repository.BizCatRepository;
 import com.scaneat.back.repository.BizHourStdRepository;
 import com.scaneat.back.repository.BizMenuRepository;
@@ -22,6 +25,7 @@ import com.scaneat.back.repository.BizRsvnStdRepository;
 import com.scaneat.back.repository.BizSeatRepository;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -40,6 +44,7 @@ public class BizService {
 	private final BizHourStdRepository bizHourStdRepository;
 	private final BizRsvnStdRepository bizRsvnStdRepository;
 	private final BizSeatRepository bizSeatRepository;
+	private final MenuService menuService;
 
 	public BizPageResponse getBizPage(int page, int size) {
 		Page<Biz> result = bizRepository.findAll(PageRequest.of(page, size, Sort.by("bizNm")));
@@ -63,6 +68,64 @@ public class BizService {
 		return bizMenuRepository.findByBizRegNoOrderBySortOrdAsc(bizRegNo).stream()
 				.map(BizMenuResponse::from)
 				.toList();
+	}
+
+	@Transactional
+	public BizMenuResponse createMenu(String bizRegNo, BizMenuRequest request) {
+		int sortOrd = request.sortOrd() != null
+				? request.sortOrd()
+				: bizMenuRepository.findByBizRegNoOrderBySortOrdAsc(bizRegNo).size() + 1;
+		BizMenu menu = BizMenu.builder()
+				.menuCd(generateMenuCd())
+				.bizRegNo(bizRegNo)
+				.bizCatCd(request.bizCatCd())
+				.menuNm(request.menuNm())
+				.menuDesc(request.menuDesc())
+				.price(request.price())
+				.imgUrl(request.imgUrl())
+				.badge(request.badge())
+				.sortOrd(sortOrd)
+				.useYn(request.useYn() != null ? request.useYn() : "Y")
+				.build();
+		bizMenuRepository.save(menu);
+		return BizMenuResponse.from(menu);
+	}
+
+	@Transactional
+	public BizMenuResponse updateMenu(String bizRegNo, String menuCd, BizMenuRequest request) {
+		BizMenu menu = bizMenuRepository.findById(menuCd)
+				.orElseThrow(() -> new ResourceNotFoundException("메뉴를 찾을 수 없습니다: " + menuCd));
+		menu.setBizCatCd(request.bizCatCd());
+		menu.setMenuNm(request.menuNm());
+		menu.setMenuDesc(request.menuDesc());
+		menu.setPrice(request.price());
+		menu.setImgUrl(request.imgUrl());
+		menu.setBadge(request.badge());
+		if (request.sortOrd() != null) {
+			menu.setSortOrd(request.sortOrd());
+		}
+		if (request.useYn() != null) {
+			menu.setUseYn(request.useYn());
+		}
+		return BizMenuResponse.from(menu);
+	}
+
+	@Transactional
+	public void deleteMenu(String bizRegNo, String menuCd) {
+		BizMenu menu = bizMenuRepository.findById(menuCd)
+				.orElseThrow(() -> new ResourceNotFoundException("메뉴를 찾을 수 없습니다: " + menuCd));
+		menuService.deleteAllOptionsForMenu(menuCd);
+		bizMenuRepository.delete(menu);
+	}
+
+	private String generateMenuCd() {
+		String menuCd;
+		int attempts = 0;
+		do {
+			menuCd = "MN" + String.format("%06d", ThreadLocalRandom.current().nextInt(1_000_000));
+			attempts++;
+		} while (bizMenuRepository.existsById(menuCd) && attempts < 5);
+		return menuCd;
 	}
 
 	public List<BizHourResponse> getHours(String bizRegNo) {
