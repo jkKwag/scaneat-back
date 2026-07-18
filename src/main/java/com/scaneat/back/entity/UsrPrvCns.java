@@ -26,15 +26,24 @@ public class UsrPrvCns {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "uuid", length = 100, nullable = false)
+	@Column(name = "uuid", length = 36)
 	private String uuid;
 
-	@Column(name = "biz_reg_no", length = 20, nullable = false)
+	@Column(name = "biz_reg_no", length = 10)
 	private String bizRegNo;
 
 	@Column(name = "guest_name", length = 50)
 	private String guestName;
 
-	@Column(name = "consent_at", nullable = false)
+	@Column(name = "guest_phone", length = 20)
+	private String guestPhone;
+
+	@Column(name = "consent_at")
 	private LocalDateTime consentAt;
+
+	@Column(name = "reg_usr_id", length = 50)
+	private String regUsrId;
+
+	@Column(name = "reg_dt")
+	private LocalDateTime regDt;
 }
