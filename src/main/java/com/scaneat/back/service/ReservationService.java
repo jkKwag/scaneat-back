@@ -61,7 +61,7 @@ public class ReservationService {
 				.seatCd(request.seatCd())
 				.partySize(request.partySize())
 				.memo(request.memo())
-				.status(ReservationStatus.PENDING)
+				.rsvnStatus(ReservationStatus.PENDING)
 				.regUsrId("guest")
 				.regDt(LocalDateTime.now())
 				.build();
@@ -91,7 +91,7 @@ public class ReservationService {
 			reservation.setMemo(request.memo());
 		}
 		if (request.status() != null) {
-			reservation.setStatus(ReservationStatus.valueOf(request.status().toUpperCase()));
+			reservation.setRsvnStatus(ReservationStatus.valueOf(request.status().toUpperCase()));
 		}
 
 		return ReservationResponse.from(reservation);
@@ -106,7 +106,7 @@ public class ReservationService {
 	@Transactional
 	public ReservationResponse updateStatus(String rsvnNo, ReservationStatusUpdateRequest request) {
 		UsrRsvn reservation = findReservation(rsvnNo);
-		reservation.setStatus(ReservationStatus.valueOf(request.status().toUpperCase()));
+		reservation.setRsvnStatus(ReservationStatus.valueOf(request.status().toUpperCase()));
 		return ReservationResponse.from(reservation);
 	}
 

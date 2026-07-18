@@ -27,7 +27,7 @@ public record ReservationResponse(
 				rsvn.getSeatCd(),
 				rsvn.getPartySize(),
 				rsvn.getMemo(),
-				rsvn.getStatus().name(),
+				rsvn.getRsvnStatus().name(),
 				rsvn.getRegDt()
 		);
 	}
