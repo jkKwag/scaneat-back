@@ -107,6 +107,9 @@ public class ReservationService {
 	public ReservationResponse updateStatus(String rsvnNo, ReservationStatusUpdateRequest request) {
 		UsrRsvn reservation = findReservation(rsvnNo);
 		reservation.setRsvnStatus(ReservationStatus.valueOf(request.rsvnStatus().toUpperCase()));
+		if (request.rejectRsn() != null) {
+			reservation.setRejectRsn(request.rejectRsn());
+		}
 		return ReservationResponse.from(reservation);
 	}
 

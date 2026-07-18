@@ -59,6 +59,9 @@ public class UsrRsvn {
 	@Column(name = "rsvn_status", length = 20)
 	private ReservationStatus rsvnStatus;
 
+	@Column(name = "reject_rsn")
+	private String rejectRsn;
+
 	@Column(name = "reg_usr_id", length = 50)
 	private String regUsrId;
 
