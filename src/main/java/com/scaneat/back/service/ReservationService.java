@@ -56,7 +56,7 @@ public class ReservationService {
 				.uuid(request.uuid())
 				.bizRegNo(request.bizRegNo())
 				.guestName(request.guestName())
-				.guestTel(request.guestTel())
+				.guestPhone(request.guestPhone())
 				.rsvnDt(request.rsvnDt())
 				.seatCd(request.seatCd())
 				.partySize(request.partySize())
@@ -75,8 +75,8 @@ public class ReservationService {
 		if (request.guestName() != null) {
 			reservation.setGuestName(request.guestName());
 		}
-		if (request.guestTel() != null) {
-			reservation.setGuestTel(request.guestTel());
+		if (request.guestPhone() != null) {
+			reservation.setGuestPhone(request.guestPhone());
 		}
 		if (request.rsvnDt() != null) {
 			reservation.setRsvnDt(request.rsvnDt());
