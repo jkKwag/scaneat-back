@@ -13,7 +13,7 @@ public record ReservationResponse(
 		String seatCd,
 		Integer partySize,
 		String memo,
-		String status,
+		String rsvnStatus,
 		LocalDateTime regDt
 ) {
 	public static ReservationResponse from(UsrRsvn rsvn) {

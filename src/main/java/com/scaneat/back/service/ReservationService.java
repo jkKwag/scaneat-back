@@ -90,8 +90,8 @@ public class ReservationService {
 		if (request.memo() != null) {
 			reservation.setMemo(request.memo());
 		}
-		if (request.status() != null) {
-			reservation.setRsvnStatus(ReservationStatus.valueOf(request.status().toUpperCase()));
+		if (request.rsvnStatus() != null) {
+			reservation.setRsvnStatus(ReservationStatus.valueOf(request.rsvnStatus().toUpperCase()));
 		}
 
 		return ReservationResponse.from(reservation);
@@ -106,7 +106,7 @@ public class ReservationService {
 	@Transactional
 	public ReservationResponse updateStatus(String rsvnNo, ReservationStatusUpdateRequest request) {
 		UsrRsvn reservation = findReservation(rsvnNo);
-		reservation.setRsvnStatus(ReservationStatus.valueOf(request.status().toUpperCase()));
+		reservation.setRsvnStatus(ReservationStatus.valueOf(request.rsvnStatus().toUpperCase()));
 		return ReservationResponse.from(reservation);
 	}
 
