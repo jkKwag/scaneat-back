@@ -9,6 +9,6 @@ public record ReservationUpdateRequest(
 		String seatCd,
 		Integer partySize,
 		String memo,
-		String status
+		String rsvnStatus
 ) {
 }
