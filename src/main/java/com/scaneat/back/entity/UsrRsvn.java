@@ -4,6 +4,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
@@ -23,22 +25,25 @@ import lombok.Setter;
 public class UsrRsvn {
 
 	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
+
 	@Column(name = "rsvn_no", length = 30)
 	private String rsvnNo;
 
-	@Column(name = "uuid", length = 100, nullable = false)
+	@Column(name = "uuid", length = 36)
 	private String uuid;
 
-	@Column(name = "biz_reg_no", length = 20, nullable = false)
+	@Column(name = "biz_reg_no", length = 10)
 	private String bizRegNo;
 
-	@Column(name = "guest_name", length = 50, nullable = false)
+	@Column(name = "guest_name", length = 50)
 	private String guestName;
 
 	@Column(name = "guest_tel", length = 20)
 	private String guestTel;
 
-	@Column(name = "rsvn_dt", nullable = false)
+	@Column(name = "rsvn_dt")
 	private LocalDateTime rsvnDt;
 
 	@Column(name = "seat_cd", length = 20)
@@ -51,9 +56,12 @@ public class UsrRsvn {
 	private String memo;
 
 	@Enumerated(EnumType.STRING)
-	@Column(name = "status", length = 20, nullable = false)
+	@Column(name = "status", length = 20)
 	private ReservationStatus status;
 
-	@Column(name = "created_at", nullable = false)
-	private LocalDateTime createdAt;
+	@Column(name = "reg_usr_id", length = 50)
+	private String regUsrId;
+
+	@Column(name = "reg_dt")
+	private LocalDateTime regDt;
 }

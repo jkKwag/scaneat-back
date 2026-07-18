@@ -14,7 +14,7 @@ public record ReservationResponse(
 		Integer partySize,
 		String memo,
 		String status,
-		LocalDateTime createdAt
+		LocalDateTime regDt
 ) {
 	public static ReservationResponse from(UsrRsvn rsvn) {
 		return new ReservationResponse(
@@ -28,7 +28,7 @@ public record ReservationResponse(
 				rsvn.getPartySize(),
 				rsvn.getMemo(),
 				rsvn.getStatus().name(),
-				rsvn.getCreatedAt()
+				rsvn.getRegDt()
 		);
 	}
 }
