@@ -27,6 +27,11 @@ public class BizController {
 
 	private final BizService bizService;
 
+	@GetMapping
+	public ApiResponse<List<BizResponse>> getAllBiz() {
+		return ApiResponse.ok(bizService.getAllBiz());
+	}
+
 	@GetMapping("/{bizno}")
 	public ApiResponse<BizResponse> getBiz(@PathVariable String bizno) {
 		return ApiResponse.ok(bizService.getBiz(bizno));

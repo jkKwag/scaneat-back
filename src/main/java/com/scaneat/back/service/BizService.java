@@ -21,6 +21,7 @@ import com.scaneat.back.repository.BizSeatRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +36,12 @@ public class BizService {
 	private final BizHourStdRepository bizHourStdRepository;
 	private final BizRsvnStdRepository bizRsvnStdRepository;
 	private final BizSeatRepository bizSeatRepository;
+
+	public List<BizResponse> getAllBiz() {
+		return bizRepository.findAll(Sort.by("bizNm")).stream()
+				.map(BizResponse::from)
+				.toList();
+	}
 
 	public BizResponse getBiz(String bizRegNo) {
 		return bizRepository.findById(bizRegNo)
