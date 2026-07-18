@@ -3,10 +3,12 @@ package com.scaneat.back.service;
 import com.scaneat.back.common.exception.ResourceNotFoundException;
 import com.scaneat.back.dto.reservation.ReservationRequest;
 import com.scaneat.back.dto.reservation.ReservationResponse;
+import com.scaneat.back.dto.reservation.ReservationStatusUpdateRequest;
 import com.scaneat.back.dto.reservation.ReservationUpdateRequest;
 import com.scaneat.back.entity.ReservationStatus;
 import com.scaneat.back.entity.UsrRsvn;
 import com.scaneat.back.repository.UsrRsvnRepository;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -30,6 +32,19 @@ public class ReservationService {
 
 	public List<ReservationResponse> getReservationsByUuid(String uuid) {
 		return usrRsvnRepository.findByUuidOrderByRsvnDtDesc(uuid).stream()
+				.map(ReservationResponse::from)
+				.toList();
+	}
+
+	public List<ReservationResponse> getReservationsByBiz(String bizRegNo, LocalDate date) {
+		if (date == null) {
+			return usrRsvnRepository.findByBizRegNoOrderByRsvnDtDesc(bizRegNo).stream()
+					.map(ReservationResponse::from)
+					.toList();
+		}
+		LocalDateTime from = date.atStartOfDay();
+		LocalDateTime to = date.plusDays(1).atStartOfDay();
+		return usrRsvnRepository.findByBizRegNoAndRsvnDtBetweenOrderByRsvnDtAsc(bizRegNo, from, to).stream()
 				.map(ReservationResponse::from)
 				.toList();
 	}
@@ -85,6 +100,13 @@ public class ReservationService {
 	public void deleteReservation(String rsvnNo) {
 		UsrRsvn reservation = findReservation(rsvnNo);
 		usrRsvnRepository.delete(reservation);
+	}
+
+	@Transactional
+	public ReservationResponse updateStatus(String rsvnNo, ReservationStatusUpdateRequest request) {
+		UsrRsvn reservation = findReservation(rsvnNo);
+		reservation.setStatus(ReservationStatus.valueOf(request.status().toUpperCase()));
+		return ReservationResponse.from(reservation);
 	}
 
 	private UsrRsvn findReservation(String rsvnNo) {
