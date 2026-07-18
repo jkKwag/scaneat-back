@@ -3,11 +3,14 @@ package com.scaneat.back.controller;
 import com.scaneat.back.common.ApiResponse;
 import com.scaneat.back.dto.reservation.ReservationRequest;
 import com.scaneat.back.dto.reservation.ReservationResponse;
+import com.scaneat.back.dto.reservation.ReservationStatusUpdateRequest;
 import com.scaneat.back.dto.reservation.ReservationUpdateRequest;
 import com.scaneat.back.service.ReservationService;
 import jakarta.validation.Valid;
+import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,6 +35,13 @@ public class ReservationController {
 		return ApiResponse.ok(reservationService.getReservationsByUuid(uuid));
 	}
 
+	@GetMapping("/biz/{bizRegNo}")
+	public ApiResponse<List<ReservationResponse>> getReservationsByBiz(
+			@PathVariable String bizRegNo,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+		return ApiResponse.ok(reservationService.getReservationsByBiz(bizRegNo, date));
+	}
+
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
 	public ApiResponse<ReservationResponse> createReservation(@Valid @RequestBody ReservationRequest request) {
@@ -47,6 +57,12 @@ public class ReservationController {
 	public ApiResponse<ReservationResponse> updateReservation(
 			@PathVariable String rsvnNo, @RequestBody ReservationUpdateRequest request) {
 		return ApiResponse.ok(reservationService.updateReservation(rsvnNo, request));
+	}
+
+	@PutMapping("/{rsvnNo}/status")
+	public ApiResponse<ReservationResponse> updateStatus(
+			@PathVariable String rsvnNo, @Valid @RequestBody ReservationStatusUpdateRequest request) {
+		return ApiResponse.ok(reservationService.updateStatus(rsvnNo, request));
 	}
 
 	@DeleteMapping("/{rsvnNo}")
