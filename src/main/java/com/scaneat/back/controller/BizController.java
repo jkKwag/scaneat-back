@@ -8,6 +8,7 @@ import com.scaneat.back.dto.biz.BizMenuResponse;
 import com.scaneat.back.dto.biz.BizResponse;
 import com.scaneat.back.dto.biz.BizRsvnStdRequest;
 import com.scaneat.back.dto.biz.BizRsvnStdResponse;
+import com.scaneat.back.dto.biz.BizSeatResponse;
 import com.scaneat.back.service.BizService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -59,5 +60,10 @@ public class BizController {
 	@PutMapping("/{bizno}/reservation-standard")
 	public ApiResponse<BizRsvnStdResponse> saveRsvnStd(@PathVariable String bizno, @RequestBody BizRsvnStdRequest request) {
 		return ApiResponse.ok(bizService.saveRsvnStd(bizno, request));
+	}
+
+	@GetMapping("/{bizno}/seats")
+	public ApiResponse<List<BizSeatResponse>> getSeats(@PathVariable String bizno) {
+		return ApiResponse.ok(bizService.getSeats(bizno));
 	}
 }

@@ -8,6 +8,7 @@ import com.scaneat.back.dto.biz.BizMenuResponse;
 import com.scaneat.back.dto.biz.BizResponse;
 import com.scaneat.back.dto.biz.BizRsvnStdRequest;
 import com.scaneat.back.dto.biz.BizRsvnStdResponse;
+import com.scaneat.back.dto.biz.BizSeatResponse;
 import com.scaneat.back.entity.BizHourStd;
 import com.scaneat.back.entity.BizHourStdId;
 import com.scaneat.back.entity.BizRsvnStd;
@@ -16,6 +17,7 @@ import com.scaneat.back.repository.BizHourStdRepository;
 import com.scaneat.back.repository.BizMenuRepository;
 import com.scaneat.back.repository.BizRepository;
 import com.scaneat.back.repository.BizRsvnStdRepository;
+import com.scaneat.back.repository.BizSeatRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +34,7 @@ public class BizService {
 	private final BizMenuRepository bizMenuRepository;
 	private final BizHourStdRepository bizHourStdRepository;
 	private final BizRsvnStdRepository bizRsvnStdRepository;
+	private final BizSeatRepository bizSeatRepository;
 
 	public BizResponse getBiz(String bizRegNo) {
 		return bizRepository.findById(bizRegNo)
@@ -106,5 +109,11 @@ public class BizService {
 				.updDt(existing != null ? now : null)
 				.build();
 		return BizRsvnStdResponse.from(bizRsvnStdRepository.save(std));
+	}
+
+	public List<BizSeatResponse> getSeats(String bizRegNo) {
+		return bizSeatRepository.findById_BizRegNoAndUseYnOrderBySortOrdAsc(bizRegNo, "Y").stream()
+				.map(BizSeatResponse::from)
+				.toList();
 	}
 }
