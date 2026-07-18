@@ -13,7 +13,7 @@ import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 
 @Entity
-@Table(name = "tb_std_biz_rsvn")
+@Table(name = "tb_biz_std_rsvn")
 @Getter
 @Setter
 @NoArgsConstructor
