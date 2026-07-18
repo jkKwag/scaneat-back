@@ -8,4 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface BizSeatRepository extends JpaRepository<BizSeat, BizSeatId> {
 
 	List<BizSeat> findById_BizRegNoAndUseYnOrderBySortOrdAsc(String bizRegNo, String useYn);
+
+	List<BizSeat> findById_BizRegNoOrderBySortOrdAsc(String bizRegNo);
 }

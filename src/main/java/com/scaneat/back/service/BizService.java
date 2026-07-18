@@ -11,12 +11,14 @@ import com.scaneat.back.dto.biz.BizResponse;
 import com.scaneat.back.dto.biz.BizRsvnStdRequest;
 import com.scaneat.back.dto.biz.BizRsvnStdResponse;
 import com.scaneat.back.dto.biz.BizSeatResponse;
+import com.scaneat.back.dto.biz.BizSeatRequest;
 import com.scaneat.back.entity.Biz;
 import com.scaneat.back.entity.BizHourStd;
 import com.scaneat.back.entity.BizHourStdId;
 import com.scaneat.back.entity.BizMenu;
 import com.scaneat.back.entity.BizRsvnStd;
-import com.scaneat.back.common.exception.ResourceNotFoundException;
+import com.scaneat.back.entity.BizSeat;
+import com.scaneat.back.entity.BizSeatId;
 import com.scaneat.back.repository.BizCatRepository;
 import com.scaneat.back.repository.BizHourStdRepository;
 import com.scaneat.back.repository.BizMenuRepository;
@@ -190,5 +192,69 @@ public class BizService {
 		return bizSeatRepository.findById_BizRegNoAndUseYnOrderBySortOrdAsc(bizRegNo, "Y").stream()
 				.map(BizSeatResponse::from)
 				.toList();
+	}
+
+	public List<BizSeatResponse> getSeatsForAdmin(String bizRegNo) {
+		return bizSeatRepository.findById_BizRegNoOrderBySortOrdAsc(bizRegNo).stream()
+				.map(BizSeatResponse::from)
+				.toList();
+	}
+
+	@Transactional
+	public BizSeatResponse createSeat(String bizRegNo, BizSeatRequest request) {
+		LocalDateTime now = LocalDateTime.now();
+		int sortOrd = request.sortOrd() != null
+				? request.sortOrd()
+				: bizSeatRepository.findById_BizRegNoOrderBySortOrdAsc(bizRegNo).size() + 1;
+		BizSeat seat = BizSeat.builder()
+				.id(new BizSeatId(bizRegNo, generateSeatCd(bizRegNo)))
+				.seatNm(request.seatNm())
+				.capacity(request.capacity())
+				.seatDesc(request.seatDesc())
+				.imgUrl(request.imgUrl())
+				.sortOrd(sortOrd)
+				.useYn(request.useYn() != null ? request.useYn() : "Y")
+				.regUsrId("admin")
+				.regDt(now)
+				.build();
+		bizSeatRepository.save(seat);
+		return BizSeatResponse.from(seat);
+	}
+
+	@Transactional
+	public BizSeatResponse updateSeat(String bizRegNo, String seatCd, BizSeatRequest request) {
+		BizSeat seat = bizSeatRepository.findById(new BizSeatId(bizRegNo, seatCd))
+				.orElseThrow(() -> new ResourceNotFoundException("좌석을 찾을 수 없습니다: " + seatCd));
+		seat.setSeatNm(request.seatNm());
+		seat.setCapacity(request.capacity());
+		seat.setSeatDesc(request.seatDesc());
+		seat.setImgUrl(request.imgUrl());
+		if (request.sortOrd() != null) {
+			seat.setSortOrd(request.sortOrd());
+		}
+		if (request.useYn() != null) {
+			seat.setUseYn(request.useYn());
+		}
+		seat.setUpdUsrId("admin");
+		seat.setUpdDt(LocalDateTime.now());
+		return BizSeatResponse.from(seat);
+	}
+
+	@Transactional
+	public void deleteSeat(String bizRegNo, String seatCd) {
+		BizSeatId id = new BizSeatId(bizRegNo, seatCd);
+		BizSeat seat = bizSeatRepository.findById(id)
+				.orElseThrow(() -> new ResourceNotFoundException("좌석을 찾을 수 없습니다: " + seatCd));
+		bizSeatRepository.delete(seat);
+	}
+
+	private String generateSeatCd(String bizRegNo) {
+		String seatCd;
+		int attempts = 0;
+		do {
+			seatCd = "ST" + String.format("%06d", ThreadLocalRandom.current().nextInt(1_000_000));
+			attempts++;
+		} while (bizSeatRepository.existsById(new BizSeatId(bizRegNo, seatCd)) && attempts < 5);
+		return seatCd;
 	}
 }

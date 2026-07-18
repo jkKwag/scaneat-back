@@ -10,6 +10,7 @@ import com.scaneat.back.dto.biz.BizPageResponse;
 import com.scaneat.back.dto.biz.BizResponse;
 import com.scaneat.back.dto.biz.BizRsvnStdRequest;
 import com.scaneat.back.dto.biz.BizRsvnStdResponse;
+import com.scaneat.back.dto.biz.BizSeatRequest;
 import com.scaneat.back.dto.biz.BizSeatResponse;
 import com.scaneat.back.service.BizService;
 import jakarta.validation.Valid;
@@ -94,5 +95,27 @@ public class BizController {
 	@GetMapping("/{bizno}/seats")
 	public ApiResponse<List<BizSeatResponse>> getSeats(@PathVariable String bizno) {
 		return ApiResponse.ok(bizService.getSeats(bizno));
+	}
+
+	@GetMapping("/{bizno}/seats/admin")
+	public ApiResponse<List<BizSeatResponse>> getSeatsForAdmin(@PathVariable String bizno) {
+		return ApiResponse.ok(bizService.getSeatsForAdmin(bizno));
+	}
+
+	@PostMapping("/{bizno}/seats")
+	public ApiResponse<BizSeatResponse> createSeat(@PathVariable String bizno, @RequestBody BizSeatRequest request) {
+		return ApiResponse.ok(bizService.createSeat(bizno, request));
+	}
+
+	@PutMapping("/{bizno}/seats/{seatCd}")
+	public ApiResponse<BizSeatResponse> updateSeat(
+			@PathVariable String bizno, @PathVariable String seatCd, @RequestBody BizSeatRequest request) {
+		return ApiResponse.ok(bizService.updateSeat(bizno, seatCd, request));
+	}
+
+	@DeleteMapping("/{bizno}/seats/{seatCd}")
+	public ApiResponse<Void> deleteSeat(@PathVariable String bizno, @PathVariable String seatCd) {
+		bizService.deleteSeat(bizno, seatCd);
+		return ApiResponse.ok(null);
 	}
 }
