@@ -41,8 +41,8 @@ public class UsrRsvn {
 	@Column(name = "rsvn_dt", nullable = false)
 	private LocalDateTime rsvnDt;
 
-	@Column(name = "seat_no", length = 20)
-	private String seatNo;
+	@Column(name = "seat_cd", length = 20)
+	private String seatCd;
 
 	@Column(name = "party_size")
 	private Integer partySize;
