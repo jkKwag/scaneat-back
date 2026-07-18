@@ -6,7 +6,7 @@ public record ReservationUpdateRequest(
 		String guestName,
 		String guestTel,
 		LocalDateTime rsvnDt,
-		String seatNo,
+		String seatCd,
 		Integer partySize,
 		String memo,
 		String status

@@ -58,7 +58,7 @@ public class ReservationService {
 				.guestName(request.guestName())
 				.guestTel(request.guestTel())
 				.rsvnDt(request.rsvnDt())
-				.seatNo(request.seatNo())
+				.seatCd(request.seatCd())
 				.partySize(request.partySize())
 				.memo(request.memo())
 				.status(ReservationStatus.PENDING)
@@ -80,8 +80,8 @@ public class ReservationService {
 		if (request.rsvnDt() != null) {
 			reservation.setRsvnDt(request.rsvnDt());
 		}
-		if (request.seatNo() != null) {
-			reservation.setSeatNo(request.seatNo());
+		if (request.seatCd() != null) {
+			reservation.setSeatCd(request.seatCd());
 		}
 		if (request.partySize() != null) {
 			reservation.setPartySize(request.partySize());

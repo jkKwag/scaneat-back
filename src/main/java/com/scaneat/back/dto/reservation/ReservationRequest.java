@@ -10,7 +10,7 @@ public record ReservationRequest(
 		@NotBlank(message = "guestName은 필수입니다.") String guestName,
 		String guestTel,
 		@NotNull(message = "rsvnDt는 필수입니다.") LocalDateTime rsvnDt,
-		String seatNo,
+		String seatCd,
 		Integer partySize,
 		String memo
 ) {
