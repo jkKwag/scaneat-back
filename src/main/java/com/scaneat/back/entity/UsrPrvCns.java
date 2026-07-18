@@ -35,6 +35,6 @@ public class UsrPrvCns {
 	@Column(name = "guest_name", length = 50)
 	private String guestName;
 
-	@Column(name = "cns_dt", nullable = false)
-	private LocalDateTime cnsDt;
+	@Column(name = "consent_at", nullable = false)
+	private LocalDateTime consentAt;
 }

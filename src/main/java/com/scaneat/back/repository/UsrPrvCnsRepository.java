@@ -7,9 +7,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface UsrPrvCnsRepository extends JpaRepository<UsrPrvCns, Long> {
 
-	List<UsrPrvCns> findByUuidOrderByCnsDtDesc(String uuid);
+	List<UsrPrvCns> findByUuidOrderByConsentAtDesc(String uuid);
 
-	Optional<UsrPrvCns> findFirstByUuidAndBizRegNoOrderByCnsDtDesc(String uuid, String bizRegNo);
+	Optional<UsrPrvCns> findFirstByUuidAndBizRegNoOrderByConsentAtDesc(String uuid, String bizRegNo);
 
 	boolean existsByUuidAndBizRegNo(String uuid, String bizRegNo);
 }

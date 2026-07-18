@@ -19,7 +19,7 @@ public class ConsentService {
 	private final UsrPrvCnsRepository usrPrvCnsRepository;
 
 	public List<ConsentResponse> getConsents(String uuid) {
-		return usrPrvCnsRepository.findByUuidOrderByCnsDtDesc(uuid).stream()
+		return usrPrvCnsRepository.findByUuidOrderByConsentAtDesc(uuid).stream()
 				.map(ConsentResponse::from)
 				.toList();
 	}
@@ -30,14 +30,14 @@ public class ConsentService {
 				.uuid(request.uuid())
 				.bizRegNo(request.bizRegNo())
 				.guestName(request.guestName())
-				.cnsDt(LocalDateTime.now())
+				.consentAt(LocalDateTime.now())
 				.build();
 		return ConsentResponse.from(usrPrvCnsRepository.save(consent));
 	}
 
 	public ConsentCheckResponse checkConsent(String uuid, String bizRegNo) {
-		return usrPrvCnsRepository.findFirstByUuidAndBizRegNoOrderByCnsDtDesc(uuid, bizRegNo)
-				.map(consent -> new ConsentCheckResponse(true, consent.getCnsDt()))
+		return usrPrvCnsRepository.findFirstByUuidAndBizRegNoOrderByConsentAtDesc(uuid, bizRegNo)
+				.map(consent -> new ConsentCheckResponse(true, consent.getConsentAt()))
 				.orElse(new ConsentCheckResponse(false, null));
 	}
 }

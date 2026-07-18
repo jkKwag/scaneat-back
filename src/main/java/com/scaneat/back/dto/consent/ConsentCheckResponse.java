@@ -4,6 +4,6 @@ import java.time.LocalDateTime;
 
 public record ConsentCheckResponse(
 		boolean consented,
-		LocalDateTime cnsDt
+		LocalDateTime consentAt
 ) {
 }

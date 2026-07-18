@@ -8,7 +8,7 @@ public record ConsentResponse(
 		String uuid,
 		String bizRegNo,
 		String guestName,
-		LocalDateTime cnsDt
+		LocalDateTime consentAt
 ) {
 	public static ConsentResponse from(UsrPrvCns consent) {
 		return new ConsentResponse(
@@ -16,7 +16,7 @@ public record ConsentResponse(
 				consent.getUuid(),
 				consent.getBizRegNo(),
 				consent.getGuestName(),
-				consent.getCnsDt()
+				consent.getConsentAt()
 		);
 	}
 }
