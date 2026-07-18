@@ -62,7 +62,8 @@ public class ReservationService {
 				.partySize(request.partySize())
 				.memo(request.memo())
 				.status(ReservationStatus.PENDING)
-				.createdAt(LocalDateTime.now())
+				.regUsrId("guest")
+				.regDt(LocalDateTime.now())
 				.build();
 		return ReservationResponse.from(usrRsvnRepository.save(reservation));
 	}
@@ -110,7 +111,7 @@ public class ReservationService {
 	}
 
 	private UsrRsvn findReservation(String rsvnNo) {
-		return usrRsvnRepository.findById(rsvnNo)
+		return usrRsvnRepository.findByRsvnNo(rsvnNo)
 				.orElseThrow(() -> new ResourceNotFoundException("예약을 찾을 수 없습니다: " + rsvnNo));
 	}
 
@@ -121,7 +122,7 @@ public class ReservationService {
 			String suffix = String.format("%05d", ThreadLocalRandom.current().nextInt(100000));
 			rsvnNo = "R" + LocalDate.now().format(RSVN_NO_DATE_FORMAT) + "-" + suffix;
 			attempts++;
-		} while (usrRsvnRepository.existsById(rsvnNo) && attempts < 5);
+		} while (usrRsvnRepository.existsByRsvnNo(rsvnNo) && attempts < 5);
 		return rsvnNo;
 	}
 }
