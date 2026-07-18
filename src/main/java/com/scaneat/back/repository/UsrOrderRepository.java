@@ -9,5 +9,7 @@ public interface UsrOrderRepository extends JpaRepository<UsrOrder, String> {
 
 	List<UsrOrder> findByUuidOrderByRegDtDesc(String uuid);
 
+	List<UsrOrder> findByBizRegNoOrderByRegDtDesc(String bizRegNo);
+
 	boolean existsByBizRegNoAndPickupNoAndRegDtBetween(String bizRegNo, String pickupNo, LocalDateTime from, LocalDateTime to);
 }

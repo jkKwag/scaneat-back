@@ -36,4 +36,9 @@ public class PaymentController {
 	public ApiResponse<List<PaymentResponse>> getPayments(@RequestParam String uuid) {
 		return ApiResponse.ok(paymentService.getPaymentsByUuid(uuid));
 	}
+
+	@GetMapping("/biz/{bizRegNo}")
+	public ApiResponse<List<PaymentResponse>> getPaymentsByBiz(@PathVariable String bizRegNo) {
+		return ApiResponse.ok(paymentService.getPaymentsByBiz(bizRegNo));
+	}
 }

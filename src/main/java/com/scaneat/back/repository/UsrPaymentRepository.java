@@ -14,4 +14,6 @@ public interface UsrPaymentRepository extends JpaRepository<UsrPayment, String> 
 			+ "AND approved_dt >= date_trunc('day', now() - interval '1 day') "
 			+ "ORDER BY approved_dt DESC", nativeQuery = true)
 	List<UsrPayment> findRecentByUuid(@Param("uuid") String uuid);
+
+	List<UsrPayment> findByBizRegNoOrderByRegDtDesc(String bizRegNo);
 }

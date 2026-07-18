@@ -118,6 +118,12 @@ public class PaymentService {
 				.toList();
 	}
 
+	public List<PaymentResponse> getPaymentsByBiz(String bizRegNo) {
+		return usrPaymentRepository.findByBizRegNoOrderByRegDtDesc(bizRegNo).stream()
+				.map(payment -> getPayment(payment.getPaymentKey()))
+				.toList();
+	}
+
 	private LocalDateTime parseTossDateTime(String raw) {
 		if (raw == null || raw.isBlank()) {
 			return null;
