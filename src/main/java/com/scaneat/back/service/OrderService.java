@@ -35,7 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class OrderService {
 
 	private static final DateTimeFormatter ORDER_NO_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
-	private static final DateTimeFormatter RSVN_NO_DATE_FORMAT = DateTimeFormatter.ofPattern("yyMMdd");
+	private static final DateTimeFormatter PICKUP_NO_DATE_FORMAT = DateTimeFormatter.ofPattern("yyMMdd");
 
 	private final UsrOrderRepository usrOrderRepository;
 	private final UsrOrderItemRepository usrOrderItemRepository;
@@ -92,7 +92,7 @@ public class OrderService {
 		}
 
 		String orderTypCd = request.orderTypCd() != null && !request.orderTypCd().isBlank() ? request.orderTypCd() : "DINE_IN";
-		String rsvnNo = "TAKEOUT".equals(orderTypCd) ? generateRsvnNo(request.bizRegNo()) : null;
+		String pickupNo = "TAKEOUT".equals(orderTypCd) ? generatePickupNo(request.bizRegNo()) : null;
 
 		UsrOrder order = UsrOrder.builder()
 				.orderNo(orderNo)
@@ -100,7 +100,7 @@ public class OrderService {
 				.bizRegNo(request.bizRegNo())
 				.seatNo(request.seatNo())
 				.orderTypCd(orderTypCd)
-				.rsvnNo(rsvnNo)
+				.pickupNo(pickupNo)
 				.totalAmount(totalAmount)
 				.status(OrderStatus.PENDING)
 				.regUsrId("guest")
@@ -146,18 +146,18 @@ public class OrderService {
 	}
 
 	// 매장 + 당일 범위 안에서만 유일하면 되는 픽업번호 (전역 유일성은 불필요)
-	private String generateRsvnNo(String bizRegNo) {
+	private String generatePickupNo(String bizRegNo) {
 		LocalDate today = LocalDate.now();
 		LocalDateTime startOfDay = today.atStartOfDay();
 		LocalDateTime startOfNextDay = today.plusDays(1).atStartOfDay();
 
-		String rsvnNo;
+		String pickupNo;
 		int attempts = 0;
 		do {
 			String suffix = String.format("%05d", ThreadLocalRandom.current().nextInt(100000));
-			rsvnNo = today.format(RSVN_NO_DATE_FORMAT) + "-" + suffix;
+			pickupNo = today.format(PICKUP_NO_DATE_FORMAT) + "-" + suffix;
 			attempts++;
-		} while (usrOrderRepository.existsByBizRegNoAndRsvnNoAndRegDtBetween(bizRegNo, rsvnNo, startOfDay, startOfNextDay) && attempts < 5);
-		return rsvnNo;
+		} while (usrOrderRepository.existsByBizRegNoAndPickupNoAndRegDtBetween(bizRegNo, pickupNo, startOfDay, startOfNextDay) && attempts < 5);
+		return pickupNo;
 	}
 }

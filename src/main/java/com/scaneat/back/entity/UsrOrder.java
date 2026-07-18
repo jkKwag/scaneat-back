@@ -41,8 +41,8 @@ public class UsrOrder {
 	@Column(name = "order_typ_cd", length = 10, nullable = false)
 	private String orderTypCd;
 
-	@Column(name = "rsvn_no", length = 20)
-	private String rsvnNo;
+	@Column(name = "pickup_no", length = 20)
+	private String pickupNo;
 
 	@Column(name = "total_amount", nullable = false)
 	private BigDecimal totalAmount;
