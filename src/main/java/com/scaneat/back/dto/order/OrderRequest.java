@@ -10,7 +10,6 @@ public record OrderRequest(
 		@NotBlank(message = "bizRegNo는 필수입니다.") String bizRegNo,
 		String seatNo,
 		String orderTypCd,
-		String rsvnNo,
 		@NotEmpty(message = "주문 항목이 최소 1개 필요합니다.") @Valid List<OrderItemRequest> items
 ) {
 }
