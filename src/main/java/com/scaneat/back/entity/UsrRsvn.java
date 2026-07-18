@@ -28,7 +28,7 @@ public class UsrRsvn {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "rsvn_no", length = 30)
+	@Column(name = "rsvn_no", length = 13)
 	private String rsvnNo;
 
 	@Column(name = "uuid", length = 36)
