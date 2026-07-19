@@ -32,6 +32,12 @@ public class Biz {
 	@Column(name = "ind_cd", length = 20)
 	private String indCd;
 
+	@Column(name = "rep_nm", length = 50, nullable = false)
+	private String repNm;
+
+	@Column(name = "opr_stt_cd", length = 1)
+	private String bizStatus;
+
 	@Column(name = "addr", length = 200)
 	private String addr;
 
