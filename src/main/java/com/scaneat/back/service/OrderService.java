@@ -58,6 +58,14 @@ public class OrderService {
 				.toList();
 	}
 
+	public List<OrderResponse> getOrdersByBiz(String bizRegNo, LocalDate from, LocalDate to) {
+		LocalDateTime start = from.atStartOfDay();
+		LocalDateTime end = to.plusDays(1).atStartOfDay();
+		return usrOrderRepository.findByBizRegNoAndRegDtBetweenOrderByRegDtDesc(bizRegNo, start, end).stream()
+				.map(this::buildOrderResponse)
+				.toList();
+	}
+
 	@Transactional
 	public OrderResponse createOrder(OrderRequest request) {
 		LocalDateTime now = LocalDateTime.now();

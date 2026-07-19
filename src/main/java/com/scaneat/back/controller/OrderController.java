@@ -5,6 +5,7 @@ import com.scaneat.back.dto.order.OrderRequest;
 import com.scaneat.back.dto.order.OrderResponse;
 import com.scaneat.back.service.OrderService;
 import jakarta.validation.Valid;
+import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -30,7 +31,13 @@ public class OrderController {
 	}
 
 	@GetMapping("/biz/{bizRegNo}")
-	public ApiResponse<List<OrderResponse>> getOrdersByBiz(@PathVariable String bizRegNo) {
+	public ApiResponse<List<OrderResponse>> getOrdersByBiz(
+			@PathVariable String bizRegNo,
+			@RequestParam(required = false) LocalDate from,
+			@RequestParam(required = false) LocalDate to) {
+		if (from != null && to != null) {
+			return ApiResponse.ok(orderService.getOrdersByBiz(bizRegNo, from, to));
+		}
 		return ApiResponse.ok(orderService.getOrdersByBiz(bizRegNo));
 	}
 
