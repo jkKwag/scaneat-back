@@ -2,6 +2,8 @@ package com.scaneat.back.controller;
 
 import com.scaneat.back.common.ApiResponse;
 import com.scaneat.back.dto.biz.BizCatResponse;
+import com.scaneat.back.dto.biz.BizCreateRequest;
+import com.scaneat.back.dto.biz.BizUpdateRequest;
 import com.scaneat.back.dto.biz.BizHourRequest;
 import com.scaneat.back.dto.biz.BizHourResponse;
 import com.scaneat.back.dto.biz.BizMenuRequest;
@@ -43,6 +45,16 @@ public class BizController {
 	@GetMapping("/{bizno}")
 	public ApiResponse<BizResponse> getBiz(@PathVariable String bizno) {
 		return ApiResponse.ok(bizService.getBiz(bizno));
+	}
+
+	@PostMapping
+	public ApiResponse<BizResponse> createBiz(@RequestBody BizCreateRequest request) {
+		return ApiResponse.ok(bizService.createBiz(request));
+	}
+
+	@PutMapping("/{bizno}")
+	public ApiResponse<BizResponse> updateBiz(@PathVariable String bizno, @RequestBody BizUpdateRequest request) {
+		return ApiResponse.ok(bizService.updateBiz(bizno, request));
 	}
 
 	@GetMapping("/{bizno}/categories")

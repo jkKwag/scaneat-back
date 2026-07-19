@@ -1,7 +1,10 @@
 package com.scaneat.back.service;
 
+import com.scaneat.back.common.exception.BusinessException;
 import com.scaneat.back.common.exception.ResourceNotFoundException;
 import com.scaneat.back.dto.biz.BizCatResponse;
+import com.scaneat.back.dto.biz.BizCreateRequest;
+import com.scaneat.back.dto.biz.BizUpdateRequest;
 import com.scaneat.back.dto.biz.BizHourRequest;
 import com.scaneat.back.dto.biz.BizHourResponse;
 import com.scaneat.back.dto.biz.BizMenuRequest;
@@ -32,6 +35,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,6 +62,38 @@ public class BizService {
 		return bizRepository.findById(bizRegNo)
 				.map(BizResponse::from)
 				.orElseThrow(() -> new ResourceNotFoundException("사업자를 찾을 수 없습니다: " + bizRegNo));
+	}
+
+	@Transactional
+	public BizResponse createBiz(BizCreateRequest request) {
+		if (request.bizRegNo() == null || request.bizRegNo().isBlank()) {
+			throw new BusinessException("사업자등록번호를 입력해주세요.");
+		}
+		if (bizRepository.existsById(request.bizRegNo())) {
+			throw new BusinessException(HttpStatus.CONFLICT, "이미 등록된 사업자등록번호입니다: " + request.bizRegNo());
+		}
+		Biz biz = Biz.builder()
+				.bizRegNo(request.bizRegNo())
+				.bizNm(request.bizNm())
+				.telNo(request.telNo())
+				.indCd(request.indCd())
+				.addr(request.addr())
+				.addrDtl(request.addrDtl())
+				.build();
+		bizRepository.save(biz);
+		return BizResponse.from(biz);
+	}
+
+	@Transactional
+	public BizResponse updateBiz(String bizRegNo, BizUpdateRequest request) {
+		Biz biz = bizRepository.findById(bizRegNo)
+				.orElseThrow(() -> new ResourceNotFoundException("사업자를 찾을 수 없습니다: " + bizRegNo));
+		biz.setBizNm(request.bizNm());
+		biz.setTelNo(request.telNo());
+		biz.setIndCd(request.indCd());
+		biz.setAddr(request.addr());
+		biz.setAddrDtl(request.addrDtl());
+		return BizResponse.from(biz);
 	}
 
 	public List<BizCatResponse> getCategories(String bizRegNo) {
