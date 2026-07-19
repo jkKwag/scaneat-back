@@ -32,10 +32,10 @@ public class Biz {
 	@Column(name = "ind_cd", length = 20)
 	private String indCd;
 
-	@Column(name = "rep_nm", length = 50)
+	@Column(name = "rep_nm", length = 50, nullable = false)
 	private String repNm;
 
-	@Column(name = "biz_status", length = 20)
+	@Column(name = "opr_stt_cd", length = 1)
 	private String bizStatus;
 
 	@Column(name = "addr", length = 200)

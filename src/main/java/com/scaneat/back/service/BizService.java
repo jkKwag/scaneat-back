@@ -72,9 +72,14 @@ public class BizService {
 		if (bizRepository.existsById(request.bizRegNo())) {
 			throw new BusinessException(HttpStatus.CONFLICT, "이미 등록된 사업자등록번호입니다: " + request.bizRegNo());
 		}
+		if (request.repNm() == null || request.repNm().isBlank()) {
+			throw new BusinessException("대표자명을 입력해주세요.");
+		}
 		Biz biz = Biz.builder()
 				.bizRegNo(request.bizRegNo())
 				.bizNm(request.bizNm())
+				.repNm(request.repNm())
+				.bizStatus("O")
 				.telNo(request.telNo())
 				.indCd(request.indCd())
 				.addr(request.addr())
