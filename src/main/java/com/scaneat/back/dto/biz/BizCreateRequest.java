@@ -5,6 +5,7 @@ public record BizCreateRequest(
 		String bizNm,
 		String repNm,
 		String telNo,
+		String emailAddr,
 		String indCd,
 		String addr,
 		String addrDtl

@@ -29,6 +29,9 @@ public class Biz {
 	@Column(name = "tel_no", length = 20)
 	private String telNo;
 
+	@Column(name = "email_addr", length = 100)
+	private String emailAddr;
+
 	@Column(name = "ind_cd", length = 20)
 	private String indCd;
 
