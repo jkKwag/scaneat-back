@@ -17,6 +17,7 @@ import com.scaneat.back.repository.UsrPaymentOrderRepository;
 import com.scaneat.back.repository.UsrPaymentPgRepository;
 import com.scaneat.back.repository.UsrPaymentRepository;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
@@ -120,6 +121,14 @@ public class PaymentService {
 
 	public List<PaymentResponse> getPaymentsByBiz(String bizRegNo) {
 		return usrPaymentRepository.findByBizRegNoOrderByRegDtDesc(bizRegNo).stream()
+				.map(payment -> getPayment(payment.getPaymentKey()))
+				.toList();
+	}
+
+	public List<PaymentResponse> getPaymentsByBiz(String bizRegNo, LocalDate from, LocalDate to) {
+		LocalDateTime start = from.atStartOfDay();
+		LocalDateTime end = to.plusDays(1).atStartOfDay();
+		return usrPaymentRepository.findByBizRegNoAndApprovedDtBetweenOrderByApprovedDtDesc(bizRegNo, start, end).stream()
 				.map(payment -> getPayment(payment.getPaymentKey()))
 				.toList();
 	}

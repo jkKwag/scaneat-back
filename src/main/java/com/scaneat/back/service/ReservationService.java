@@ -49,6 +49,14 @@ public class ReservationService {
 				.toList();
 	}
 
+	public List<ReservationResponse> getReservationsByBiz(String bizRegNo, LocalDate from, LocalDate to) {
+		LocalDateTime start = from.atStartOfDay();
+		LocalDateTime end = to.plusDays(1).atStartOfDay();
+		return usrRsvnRepository.findByBizRegNoAndRsvnDtBetweenOrderByRsvnDtDesc(bizRegNo, start, end).stream()
+				.map(ReservationResponse::from)
+				.toList();
+	}
+
 	@Transactional
 	public ReservationResponse createReservation(ReservationRequest request) {
 		UsrRsvn reservation = UsrRsvn.builder()

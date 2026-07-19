@@ -14,6 +14,8 @@ public interface UsrRsvnRepository extends JpaRepository<UsrRsvn, Long> {
 
 	List<UsrRsvn> findByBizRegNoAndRsvnDtBetweenOrderByRsvnDtAsc(String bizRegNo, LocalDateTime from, LocalDateTime to);
 
+	List<UsrRsvn> findByBizRegNoAndRsvnDtBetweenOrderByRsvnDtDesc(String bizRegNo, LocalDateTime from, LocalDateTime to);
+
 	Optional<UsrRsvn> findByRsvnNo(String rsvnNo);
 
 	boolean existsByRsvnNo(String rsvnNo);

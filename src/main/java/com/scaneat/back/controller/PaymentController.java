@@ -5,6 +5,7 @@ import com.scaneat.back.dto.payment.PaymentConfirmRequest;
 import com.scaneat.back.dto.payment.PaymentResponse;
 import com.scaneat.back.service.PaymentService;
 import jakarta.validation.Valid;
+import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,7 +39,13 @@ public class PaymentController {
 	}
 
 	@GetMapping("/biz/{bizRegNo}")
-	public ApiResponse<List<PaymentResponse>> getPaymentsByBiz(@PathVariable String bizRegNo) {
+	public ApiResponse<List<PaymentResponse>> getPaymentsByBiz(
+			@PathVariable String bizRegNo,
+			@RequestParam(required = false) LocalDate from,
+			@RequestParam(required = false) LocalDate to) {
+		if (from != null && to != null) {
+			return ApiResponse.ok(paymentService.getPaymentsByBiz(bizRegNo, from, to));
+		}
 		return ApiResponse.ok(paymentService.getPaymentsByBiz(bizRegNo));
 	}
 }

@@ -1,6 +1,7 @@
 package com.scaneat.back.repository;
 
 import com.scaneat.back.entity.UsrPayment;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -16,4 +17,6 @@ public interface UsrPaymentRepository extends JpaRepository<UsrPayment, String> 
 	List<UsrPayment> findRecentByUuid(@Param("uuid") String uuid);
 
 	List<UsrPayment> findByBizRegNoOrderByRegDtDesc(String bizRegNo);
+
+	List<UsrPayment> findByBizRegNoAndApprovedDtBetweenOrderByApprovedDtDesc(String bizRegNo, LocalDateTime from, LocalDateTime to);
 }
