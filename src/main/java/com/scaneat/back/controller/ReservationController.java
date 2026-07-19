@@ -38,7 +38,12 @@ public class ReservationController {
 	@GetMapping("/biz/{bizRegNo}")
 	public ApiResponse<List<ReservationResponse>> getReservationsByBiz(
 			@PathVariable String bizRegNo,
-			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+			@RequestParam(required = false) LocalDate from,
+			@RequestParam(required = false) LocalDate to) {
+		if (from != null && to != null) {
+			return ApiResponse.ok(reservationService.getReservationsByBiz(bizRegNo, from, to));
+		}
 		return ApiResponse.ok(reservationService.getReservationsByBiz(bizRegNo, date));
 	}
 
