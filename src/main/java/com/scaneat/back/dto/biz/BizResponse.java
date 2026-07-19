@@ -7,6 +7,8 @@ public record BizResponse(
 		String bizNm,
 		String telNo,
 		String indCd,
+		String repNm,
+		String bizStatus,
 		String addr,
 		String addrDtl
 ) {
@@ -16,6 +18,8 @@ public record BizResponse(
 				biz.getBizNm(),
 				biz.getTelNo(),
 				biz.getIndCd(),
+				biz.getRepNm(),
+				biz.getBizStatus(),
 				biz.getAddr(),
 				biz.getAddrDtl()
 		);
