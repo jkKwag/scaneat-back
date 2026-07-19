@@ -81,6 +81,7 @@ public class BizService {
 				.repNm(request.repNm())
 				.bizStatus("O")
 				.telNo(request.telNo())
+				.emailAddr(request.emailAddr())
 				.indCd(request.indCd())
 				.addr(request.addr())
 				.addrDtl(request.addrDtl())
@@ -95,6 +96,7 @@ public class BizService {
 				.orElseThrow(() -> new ResourceNotFoundException("사업자를 찾을 수 없습니다: " + bizRegNo));
 		biz.setBizNm(request.bizNm());
 		biz.setTelNo(request.telNo());
+		biz.setEmailAddr(request.emailAddr());
 		biz.setIndCd(request.indCd());
 		biz.setAddr(request.addr());
 		biz.setAddrDtl(request.addrDtl());
