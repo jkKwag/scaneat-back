@@ -6,7 +6,6 @@ import com.scaneat.back.common.exception.ResourceNotFoundException;
 import com.scaneat.back.dto.payment.PaymentConfirmRequest;
 import com.scaneat.back.dto.payment.PaymentPgResponse;
 import com.scaneat.back.dto.payment.PaymentResponse;
-import com.scaneat.back.entity.OrderStatus;
 import com.scaneat.back.entity.UsrOrder;
 import com.scaneat.back.entity.UsrPayment;
 import com.scaneat.back.entity.UsrPaymentOrder;
@@ -95,8 +94,6 @@ public class PaymentService {
 						.build())
 				.toList();
 		usrPaymentOrderRepository.saveAll(mappings);
-
-		orders.forEach(order -> order.setStatus(OrderStatus.PAID));
 
 		return PaymentResponse.from(payment, request.orderNos(), PaymentPgResponse.from(pg));
 	}

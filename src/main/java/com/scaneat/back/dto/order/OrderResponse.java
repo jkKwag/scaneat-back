@@ -14,10 +14,11 @@ public record OrderResponse(
 		String pickupNo,
 		BigDecimal totalAmount,
 		String status,
+		String paymentStatus,
 		LocalDateTime regDt,
 		List<OrderItemResponse> items
 ) {
-	public static OrderResponse from(UsrOrder order, List<OrderItemResponse> items) {
+	public static OrderResponse from(UsrOrder order, List<OrderItemResponse> items, String paymentStatus) {
 		return new OrderResponse(
 				order.getOrderNo(),
 				order.getUuid(),
@@ -27,6 +28,7 @@ public record OrderResponse(
 				order.getPickupNo(),
 				order.getTotalAmount(),
 				order.getStatus().name(),
+				paymentStatus,
 				order.getRegDt(),
 				items
 		);
