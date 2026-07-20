@@ -5,6 +5,7 @@ import com.scaneat.back.dto.order.OrderRequest;
 import com.scaneat.back.dto.order.OrderResponse;
 import com.scaneat.back.dto.order.OrderStatusUpdateRequest;
 import com.scaneat.back.service.OrderService;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.List;
@@ -63,7 +64,10 @@ public class OrderController {
 	}
 
 	@GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-	public SseEmitter stream(@RequestParam String uuid) {
+	public SseEmitter stream(@RequestParam String uuid, HttpServletResponse response) {
+		// 리버스 프록시(nginx 등)가 스트리밍 응답을 버퍼링해서 이벤트 전달이 지연되는 것을 방지
+		response.setHeader("X-Accel-Buffering", "no");
+		response.setHeader("Cache-Control", "no-cache");
 		return orderService.subscribe(uuid);
 	}
 }
