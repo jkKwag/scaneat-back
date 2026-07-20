@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Service
 @RequiredArgsConstructor
@@ -47,6 +48,7 @@ public class OrderService {
 	private final UsrOrderItemOptRepository usrOrderItemOptRepository;
 	private final UsrPaymentOrderRepository usrPaymentOrderRepository;
 	private final UsrPaymentRepository usrPaymentRepository;
+	private final OrderEventService orderEventService;
 
 	public OrderResponse getOrder(String orderNo) {
 		UsrOrder order = findOrder(orderNo);
@@ -139,7 +141,13 @@ public class OrderService {
 	public OrderResponse updateStatus(String orderNo, OrderStatusUpdateRequest request) {
 		UsrOrder order = findOrder(orderNo);
 		order.setStatus(OrderStatus.valueOf(request.status().toUpperCase()));
-		return buildOrderResponse(order);
+		OrderResponse response = buildOrderResponse(order);
+		orderEventService.notifyOrderUpdated(order.getUuid(), response);
+		return response;
+	}
+
+	public SseEmitter subscribe(String uuid) {
+		return orderEventService.subscribe(uuid);
 	}
 
 	private UsrOrder findOrder(String orderNo) {
