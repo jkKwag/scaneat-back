@@ -16,6 +16,7 @@ public record OrderResponse(
 		String status,
 		String paymentStatus,
 		LocalDateTime regDt,
+		LocalDateTime updDt,
 		List<OrderItemResponse> items
 ) {
 	public static OrderResponse from(UsrOrder order, List<OrderItemResponse> items, String paymentStatus) {
@@ -30,6 +31,7 @@ public record OrderResponse(
 				order.getStatus().name(),
 				paymentStatus,
 				order.getRegDt(),
+				order.getUpdDt(),
 				items
 		);
 	}
