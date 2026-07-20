@@ -3,6 +3,7 @@ package com.scaneat.back.controller;
 import com.scaneat.back.common.ApiResponse;
 import com.scaneat.back.dto.order.OrderRequest;
 import com.scaneat.back.dto.order.OrderResponse;
+import com.scaneat.back.dto.order.OrderStatusUpdateRequest;
 import com.scaneat.back.service.OrderService;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
@@ -12,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -50,5 +52,11 @@ public class OrderController {
 	@GetMapping("/{orderNo}")
 	public ApiResponse<OrderResponse> getOrder(@PathVariable String orderNo) {
 		return ApiResponse.ok(orderService.getOrder(orderNo));
+	}
+
+	@PutMapping("/{orderNo}/status")
+	public ApiResponse<OrderResponse> updateStatus(
+			@PathVariable String orderNo, @Valid @RequestBody OrderStatusUpdateRequest request) {
+		return ApiResponse.ok(orderService.updateStatus(orderNo, request));
 	}
 }

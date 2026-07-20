@@ -7,15 +7,20 @@ import com.scaneat.back.dto.order.OrderItemRequest;
 import com.scaneat.back.dto.order.OrderItemResponse;
 import com.scaneat.back.dto.order.OrderRequest;
 import com.scaneat.back.dto.order.OrderResponse;
+import com.scaneat.back.dto.order.OrderStatusUpdateRequest;
 import com.scaneat.back.entity.OrderStatus;
 import com.scaneat.back.entity.UsrOrder;
 import com.scaneat.back.entity.UsrOrderItem;
 import com.scaneat.back.entity.UsrOrderItemId;
 import com.scaneat.back.entity.UsrOrderItemOpt;
 import com.scaneat.back.entity.UsrOrderItemOptId;
+import com.scaneat.back.entity.UsrPayment;
+import com.scaneat.back.entity.UsrPaymentOrder;
 import com.scaneat.back.repository.UsrOrderItemOptRepository;
 import com.scaneat.back.repository.UsrOrderItemRepository;
 import com.scaneat.back.repository.UsrOrderRepository;
+import com.scaneat.back.repository.UsrPaymentOrderRepository;
+import com.scaneat.back.repository.UsrPaymentRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -40,6 +45,8 @@ public class OrderService {
 	private final UsrOrderRepository usrOrderRepository;
 	private final UsrOrderItemRepository usrOrderItemRepository;
 	private final UsrOrderItemOptRepository usrOrderItemOptRepository;
+	private final UsrPaymentOrderRepository usrPaymentOrderRepository;
+	private final UsrPaymentRepository usrPaymentRepository;
 
 	public OrderResponse getOrder(String orderNo) {
 		UsrOrder order = findOrder(orderNo);
@@ -116,7 +123,7 @@ public class OrderService {
 				.orderTypCd(orderTypCd)
 				.pickupNo(pickupNo)
 				.totalAmount(totalAmount)
-				.status(OrderStatus.PENDING)
+				.status(OrderStatus.RECEIVED)
 				.regUsrId("guest")
 				.regDt(now)
 				.build();
@@ -125,6 +132,13 @@ public class OrderService {
 		usrOrderItemRepository.saveAll(items);
 		usrOrderItemOptRepository.saveAll(options);
 
+		return buildOrderResponse(order);
+	}
+
+	@Transactional
+	public OrderResponse updateStatus(String orderNo, OrderStatusUpdateRequest request) {
+		UsrOrder order = findOrder(orderNo);
+		order.setStatus(OrderStatus.valueOf(request.status().toUpperCase()));
 		return buildOrderResponse(order);
 	}
 
@@ -145,7 +159,12 @@ public class OrderService {
 				.map(item -> OrderItemResponse.from(item, optionsBySeq.getOrDefault(item.getId().getOrderSeq(), List.of())))
 				.toList();
 
-		return OrderResponse.from(order, itemResponses);
+		String paymentStatus = usrPaymentOrderRepository.findById_OrderNo(order.getOrderNo())
+				.flatMap(po -> usrPaymentRepository.findById(po.getId().getPaymentKey()))
+				.map(UsrPayment::getStatus)
+				.orElse(null);
+
+		return OrderResponse.from(order, itemResponses, paymentStatus);
 	}
 
 	private String generateOrderNo() {
