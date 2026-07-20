@@ -141,6 +141,7 @@ public class OrderService {
 	public OrderResponse updateStatus(String orderNo, OrderStatusUpdateRequest request) {
 		UsrOrder order = findOrder(orderNo);
 		order.setStatus(OrderStatus.valueOf(request.status().toUpperCase()));
+		order.setUpdDt(LocalDateTime.now());
 		OrderResponse response = buildOrderResponse(order);
 		orderEventService.notifyOrderUpdated(order.getUuid(), response);
 		return response;
