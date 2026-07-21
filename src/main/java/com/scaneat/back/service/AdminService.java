@@ -6,11 +6,14 @@ import com.scaneat.back.dto.admin.AdminLoginResponse;
 import com.scaneat.back.dto.admin.AdminUsrResponse;
 import com.scaneat.back.dto.admin.SysMenuResponse;
 import com.scaneat.back.entity.AdminUsr;
+import com.scaneat.back.entity.BizEmp;
 import com.scaneat.back.entity.SysMenu;
 import com.scaneat.back.repository.AdminUsrRepository;
+import com.scaneat.back.repository.BizEmpRepository;
 import com.scaneat.back.repository.SysMenuRepository;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -26,16 +29,27 @@ public class AdminService {
 	private static final String INVALID_CREDENTIALS_MESSAGE = "아이디 또는 비밀번호가 올바르지 않습니다.";
 
 	private final AdminUsrRepository adminUsrRepository;
+	private final BizEmpRepository bizEmpRepository;
 	private final SysMenuRepository sysMenuRepository;
 	private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
+	// 관리자 계정(tb_admin_usr)과 직원 계정(tb_biz_emp)을 같은 로그인 화면에서 함께 조회한다.
+	// 두 테이블은 완전히 분리된 채로 두고, 로그인 시도만 순서대로 두 곳을 확인한다.
 	public AdminLoginResponse login(AdminLoginRequest request) {
-		AdminUsr admin = adminUsrRepository.findByAdminIdAndUseYn(request.adminId(), "Y")
+		Optional<AdminUsr> admin = adminUsrRepository.findByAdminIdAndUseYn(request.adminId(), "Y");
+		if (admin.isPresent()) {
+			if (!passwordEncoder.matches(request.password(), admin.get().getPasswordHash())) {
+				throw new BusinessException(HttpStatus.UNAUTHORIZED, INVALID_CREDENTIALS_MESSAGE);
+			}
+			return AdminLoginResponse.from(admin.get());
+		}
+
+		BizEmp emp = bizEmpRepository.findByEmpIdAndUseYn(request.adminId(), "Y")
 				.orElseThrow(() -> new BusinessException(HttpStatus.UNAUTHORIZED, INVALID_CREDENTIALS_MESSAGE));
-		if (!passwordEncoder.matches(request.password(), admin.getPasswordHash())) {
+		if (!passwordEncoder.matches(request.password(), emp.getPasswordHash())) {
 			throw new BusinessException(HttpStatus.UNAUTHORIZED, INVALID_CREDENTIALS_MESSAGE);
 		}
-		return AdminLoginResponse.from(admin);
+		return AdminLoginResponse.fromEmployee(emp);
 	}
 
 	public List<AdminUsrResponse> getUsersByBiz(String bizRegNo) {
