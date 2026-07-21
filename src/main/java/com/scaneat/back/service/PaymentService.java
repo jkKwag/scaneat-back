@@ -3,6 +3,7 @@ package com.scaneat.back.service;
 import com.scaneat.back.client.TossPaymentsClient;
 import com.scaneat.back.common.exception.BusinessException;
 import com.scaneat.back.common.exception.ResourceNotFoundException;
+import com.scaneat.back.dto.payment.PaymentCancelRequest;
 import com.scaneat.back.dto.payment.PaymentConfirmRequest;
 import com.scaneat.back.dto.payment.PaymentPgResponse;
 import com.scaneat.back.dto.payment.PaymentResponse;
@@ -96,6 +97,20 @@ public class PaymentService {
 		usrPaymentOrderRepository.saveAll(mappings);
 
 		return PaymentResponse.from(payment, request.orderNos(), PaymentPgResponse.from(pg));
+	}
+
+	@Transactional
+	public PaymentResponse cancelPayment(String paymentKey, PaymentCancelRequest request) {
+		UsrPayment payment = usrPaymentRepository.findById(paymentKey)
+				.orElseThrow(() -> new ResourceNotFoundException("결제 정보를 찾을 수 없습니다: " + paymentKey));
+
+		Map<String, Object> result = tossPaymentsClient.cancelPayment(paymentKey, request.cancelReason());
+		log.info("[Toss] cancel raw response: {}", result);
+
+		payment.setStatus((String) result.get("status"));
+		usrPaymentRepository.save(payment);
+
+		return getPayment(paymentKey);
 	}
 
 	public PaymentResponse getPayment(String paymentKey) {

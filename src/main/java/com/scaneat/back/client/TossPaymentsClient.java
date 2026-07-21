@@ -43,4 +43,21 @@ public class TossPaymentsClient {
 					"결제 승인에 실패했습니다: " + ex.getResponseBodyAsString());
 		}
 	}
+
+	public Map<String, Object> cancelPayment(String paymentKey, String cancelReason) {
+		String encodedAuth = Base64.getEncoder()
+				.encodeToString((secretKey + ":").getBytes(StandardCharsets.UTF_8));
+
+		try {
+			return tossRestClient.post()
+					.uri("/v1/payments/{paymentKey}/cancel", paymentKey)
+					.header(HttpHeaders.AUTHORIZATION, "Basic " + encodedAuth)
+					.body(Map.of("cancelReason", cancelReason))
+					.retrieve()
+					.body(Map.class);
+		} catch (RestClientResponseException ex) {
+			throw new BusinessException(HttpStatus.valueOf(ex.getStatusCode().value()),
+					"결제 취소에 실패했습니다: " + ex.getResponseBodyAsString());
+		}
+	}
 }

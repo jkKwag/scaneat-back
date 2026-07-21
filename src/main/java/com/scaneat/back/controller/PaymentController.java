@@ -1,6 +1,7 @@
 package com.scaneat.back.controller;
 
 import com.scaneat.back.common.ApiResponse;
+import com.scaneat.back.dto.payment.PaymentCancelRequest;
 import com.scaneat.back.dto.payment.PaymentConfirmRequest;
 import com.scaneat.back.dto.payment.PaymentResponse;
 import com.scaneat.back.service.PaymentService;
@@ -31,6 +32,13 @@ public class PaymentController {
 	@GetMapping("/{paymentKey}")
 	public ApiResponse<PaymentResponse> getPayment(@PathVariable String paymentKey) {
 		return ApiResponse.ok(paymentService.getPayment(paymentKey));
+	}
+
+	@PostMapping("/{paymentKey}/cancel")
+	public ApiResponse<PaymentResponse> cancelPayment(
+			@PathVariable String paymentKey,
+			@Valid @RequestBody PaymentCancelRequest request) {
+		return ApiResponse.ok(paymentService.cancelPayment(paymentKey, request));
 	}
 
 	@GetMapping
