@@ -16,7 +16,7 @@ public class IndClsService {
 	private final IndClsRepository indClsRepository;
 
 	public List<IndClsResponse> getAll() {
-		return indClsRepository.findAll().stream()
+		return indClsRepository.findAllByOrderByClsLvlAscSortOrdAsc().stream()
 				.map(IndClsResponse::from)
 				.toList();
 	}
