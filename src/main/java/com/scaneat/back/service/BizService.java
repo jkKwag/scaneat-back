@@ -3,6 +3,7 @@ package com.scaneat.back.service;
 import com.scaneat.back.common.exception.BusinessException;
 import com.scaneat.back.common.exception.ResourceNotFoundException;
 import com.scaneat.back.dto.biz.BizCatResponse;
+import com.scaneat.back.dto.biz.BizEmpResponse;
 import com.scaneat.back.dto.biz.BizCreateRequest;
 import com.scaneat.back.dto.biz.BizUpdateRequest;
 import com.scaneat.back.dto.biz.BizHourRequest;
@@ -23,6 +24,7 @@ import com.scaneat.back.entity.BizRsvnStd;
 import com.scaneat.back.entity.BizSeat;
 import com.scaneat.back.entity.BizSeatId;
 import com.scaneat.back.repository.BizCatRepository;
+import com.scaneat.back.repository.BizEmpRepository;
 import com.scaneat.back.repository.BizHourStdRepository;
 import com.scaneat.back.repository.BizMenuRepository;
 import com.scaneat.back.repository.BizRepository;
@@ -50,6 +52,7 @@ public class BizService {
 	private final BizHourStdRepository bizHourStdRepository;
 	private final BizRsvnStdRepository bizRsvnStdRepository;
 	private final BizSeatRepository bizSeatRepository;
+	private final BizEmpRepository bizEmpRepository;
 	private final MenuService menuService;
 
 	public BizPageResponse getBizPage(int page, int size) {
@@ -289,6 +292,12 @@ public class BizService {
 		BizSeat seat = bizSeatRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("좌석을 찾을 수 없습니다: " + seatCd));
 		bizSeatRepository.delete(seat);
+	}
+
+	public List<BizEmpResponse> getEmployees(String bizRegNo) {
+		return bizEmpRepository.findByBizRegNoOrderByRegDtAsc(bizRegNo).stream()
+				.map(BizEmpResponse::from)
+				.toList();
 	}
 
 	private String generateSeatCd(String bizRegNo) {

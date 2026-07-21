@@ -2,6 +2,7 @@ package com.scaneat.back.controller;
 
 import com.scaneat.back.common.ApiResponse;
 import com.scaneat.back.dto.biz.BizCatResponse;
+import com.scaneat.back.dto.biz.BizEmpResponse;
 import com.scaneat.back.dto.biz.BizCreateRequest;
 import com.scaneat.back.dto.biz.BizUpdateRequest;
 import com.scaneat.back.dto.biz.BizHourRequest;
@@ -129,5 +130,10 @@ public class BizController {
 	public ApiResponse<Void> deleteSeat(@PathVariable String bizno, @PathVariable String seatCd) {
 		bizService.deleteSeat(bizno, seatCd);
 		return ApiResponse.ok(null);
+	}
+
+	@GetMapping("/{bizno}/employees")
+	public ApiResponse<List<BizEmpResponse>> getEmployees(@PathVariable String bizno) {
+		return ApiResponse.ok(bizService.getEmployees(bizno));
 	}
 }
