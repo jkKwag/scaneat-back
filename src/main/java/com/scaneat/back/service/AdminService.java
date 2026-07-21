@@ -3,6 +3,7 @@ package com.scaneat.back.service;
 import com.scaneat.back.common.exception.BusinessException;
 import com.scaneat.back.dto.admin.AdminLoginRequest;
 import com.scaneat.back.dto.admin.AdminLoginResponse;
+import com.scaneat.back.dto.admin.AdminUsrResponse;
 import com.scaneat.back.dto.admin.SysMenuResponse;
 import com.scaneat.back.entity.AdminUsr;
 import com.scaneat.back.entity.SysMenu;
@@ -35,6 +36,12 @@ public class AdminService {
 			throw new BusinessException(HttpStatus.UNAUTHORIZED, INVALID_CREDENTIALS_MESSAGE);
 		}
 		return AdminLoginResponse.from(admin);
+	}
+
+	public List<AdminUsrResponse> getUsersByBiz(String bizRegNo) {
+		return adminUsrRepository.findByBizRegNoOrderByRegDtAsc(bizRegNo).stream()
+				.map(AdminUsrResponse::from)
+				.toList();
 	}
 
 	public List<SysMenuResponse> getMenuTree(String adminRole) {
