@@ -4,6 +4,8 @@ import com.scaneat.back.common.exception.BusinessException;
 import com.scaneat.back.common.exception.ResourceNotFoundException;
 import com.scaneat.back.dto.biz.BizCatResponse;
 import com.scaneat.back.dto.biz.BizEmpResponse;
+import com.scaneat.back.dto.biz.EmpLoginRequest;
+import com.scaneat.back.dto.biz.EmpLoginResponse;
 import com.scaneat.back.dto.biz.BizCreateRequest;
 import com.scaneat.back.dto.biz.BizUpdateRequest;
 import com.scaneat.back.dto.biz.BizHourRequest;
@@ -17,6 +19,7 @@ import com.scaneat.back.dto.biz.BizRsvnStdResponse;
 import com.scaneat.back.dto.biz.BizSeatResponse;
 import com.scaneat.back.dto.biz.BizSeatRequest;
 import com.scaneat.back.entity.Biz;
+import com.scaneat.back.entity.BizEmp;
 import com.scaneat.back.entity.BizHourStd;
 import com.scaneat.back.entity.BizHourStdId;
 import com.scaneat.back.entity.BizMenu;
@@ -38,6 +41,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,6 +58,9 @@ public class BizService {
 	private final BizSeatRepository bizSeatRepository;
 	private final BizEmpRepository bizEmpRepository;
 	private final MenuService menuService;
+	private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+	private static final String INVALID_EMP_CREDENTIALS_MESSAGE = "아이디 또는 비밀번호가 올바르지 않습니다.";
 
 	public BizPageResponse getBizPage(int page, int size) {
 		Page<Biz> result = bizRepository.findAll(PageRequest.of(page, size, Sort.by("bizNm")));
@@ -298,6 +305,15 @@ public class BizService {
 		return bizEmpRepository.findByBizRegNoOrderByRegDtAsc(bizRegNo).stream()
 				.map(BizEmpResponse::from)
 				.toList();
+	}
+
+	public EmpLoginResponse employeeLogin(EmpLoginRequest request) {
+		BizEmp emp = bizEmpRepository.findByEmpIdAndUseYn(request.empId(), "Y")
+				.orElseThrow(() -> new BusinessException(HttpStatus.UNAUTHORIZED, INVALID_EMP_CREDENTIALS_MESSAGE));
+		if (!passwordEncoder.matches(request.password(), emp.getPasswordHash())) {
+			throw new BusinessException(HttpStatus.UNAUTHORIZED, INVALID_EMP_CREDENTIALS_MESSAGE);
+		}
+		return EmpLoginResponse.from(emp);
 	}
 
 	private String generateSeatCd(String bizRegNo) {
