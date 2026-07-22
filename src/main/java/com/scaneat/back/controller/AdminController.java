@@ -43,13 +43,13 @@ public class AdminController {
 
 	@PutMapping("/users/{adminId}/password")
 	public ApiResponse<Void> changePassword(@PathVariable String adminId, @Valid @RequestBody PasswordChangeRequest request) {
-		adminService.changePassword(adminId, request.newPassword());
+		adminService.changePassword(adminId, request);
 		return ApiResponse.ok(null);
 	}
 
 	@PutMapping("/employees/{empId}/password")
 	public ApiResponse<Void> changeEmployeePassword(@PathVariable String empId, @Valid @RequestBody PasswordChangeRequest request) {
-		adminService.changeEmployeePassword(empId, request.newPassword());
+		adminService.changeEmployeePassword(empId, request);
 		return ApiResponse.ok(null);
 	}
 }
