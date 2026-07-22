@@ -3,6 +3,7 @@ package com.scaneat.back.service;
 import com.scaneat.back.client.SupabaseStorageClient;
 import com.scaneat.back.common.exception.BusinessException;
 import com.scaneat.back.common.exception.ResourceNotFoundException;
+import com.scaneat.back.dto.biz.BizCatRequest;
 import com.scaneat.back.dto.biz.BizCatResponse;
 import com.scaneat.back.dto.biz.BizEmpResponse;
 import com.scaneat.back.dto.biz.BizCreateRequest;
@@ -19,6 +20,7 @@ import com.scaneat.back.dto.biz.BizSeatResponse;
 import com.scaneat.back.dto.biz.BizSeatRequest;
 import com.scaneat.back.dto.biz.ImageUploadResponse;
 import com.scaneat.back.entity.Biz;
+import com.scaneat.back.entity.BizCat;
 import com.scaneat.back.entity.BizHourStd;
 import com.scaneat.back.entity.BizHourStdId;
 import com.scaneat.back.entity.BizMenu;
@@ -115,6 +117,64 @@ public class BizService {
 		return bizCatRepository.findByBizRegNoOrderBySortOrdAsc(bizRegNo).stream()
 				.map(BizCatResponse::from)
 				.toList();
+	}
+
+	@Transactional
+	public BizCatResponse createCategory(String bizRegNo, BizCatRequest request) {
+		LocalDateTime now = LocalDateTime.now();
+		// 정렬순서를 비워두면(자동) 0으로 설정해 목록 맨 위로 오도록 한다.
+		int sortOrd = request.sortOrd() != null ? request.sortOrd() : 0;
+		BizCat cat = BizCat.builder()
+				.bizCatCd(generateBizCatCd())
+				.bizRegNo(bizRegNo)
+				.catCd(request.catCd())
+				.bizCatNm(request.bizCatNm())
+				.sortOrd(sortOrd)
+				.useYn(request.useYn() != null ? request.useYn() : "Y")
+				.rmrk(request.rmrk())
+				.regUsrId("admin")
+				.regDt(now)
+				.build();
+		bizCatRepository.save(cat);
+		return BizCatResponse.from(cat);
+	}
+
+	@Transactional
+	public BizCatResponse updateCategory(String bizRegNo, String bizCatCd, BizCatRequest request) {
+		BizCat cat = bizCatRepository.findById(bizCatCd)
+				.orElseThrow(() -> new ResourceNotFoundException("카테고리를 찾을 수 없습니다: " + bizCatCd));
+		cat.setCatCd(request.catCd());
+		cat.setBizCatNm(request.bizCatNm());
+		cat.setRmrk(request.rmrk());
+		if (request.sortOrd() != null) {
+			cat.setSortOrd(request.sortOrd());
+		}
+		if (request.useYn() != null) {
+			cat.setUseYn(request.useYn());
+		}
+		cat.setUpdUsrId("admin");
+		cat.setUpdDt(LocalDateTime.now());
+		return BizCatResponse.from(cat);
+	}
+
+	@Transactional
+	public void deleteCategory(String bizRegNo, String bizCatCd) {
+		BizCat cat = bizCatRepository.findById(bizCatCd)
+				.orElseThrow(() -> new ResourceNotFoundException("카테고리를 찾을 수 없습니다: " + bizCatCd));
+		if (bizMenuRepository.existsByBizRegNoAndBizCatCd(bizRegNo, bizCatCd)) {
+			throw new BusinessException("해당 카테고리를 사용중인 메뉴가 있어 삭제할 수 없습니다.");
+		}
+		bizCatRepository.delete(cat);
+	}
+
+	private String generateBizCatCd() {
+		String bizCatCd;
+		int attempts = 0;
+		do {
+			bizCatCd = "CT" + String.format("%06d", ThreadLocalRandom.current().nextInt(1_000_000));
+			attempts++;
+		} while (bizCatRepository.existsById(bizCatCd) && attempts < 5);
+		return bizCatCd;
 	}
 
 	public List<BizMenuResponse> getMenus(String bizRegNo) {
