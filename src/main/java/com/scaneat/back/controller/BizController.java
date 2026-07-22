@@ -1,6 +1,7 @@
 package com.scaneat.back.controller;
 
 import com.scaneat.back.common.ApiResponse;
+import com.scaneat.back.dto.biz.BizCatRequest;
 import com.scaneat.back.dto.biz.BizCatResponse;
 import com.scaneat.back.dto.biz.BizEmpResponse;
 import com.scaneat.back.dto.biz.BizCreateRequest;
@@ -64,6 +65,23 @@ public class BizController {
 	@GetMapping("/{bizno}/categories")
 	public ApiResponse<List<BizCatResponse>> getCategories(@PathVariable String bizno) {
 		return ApiResponse.ok(bizService.getCategories(bizno));
+	}
+
+	@PostMapping("/{bizno}/categories")
+	public ApiResponse<BizCatResponse> createCategory(@PathVariable String bizno, @RequestBody BizCatRequest request) {
+		return ApiResponse.ok(bizService.createCategory(bizno, request));
+	}
+
+	@PutMapping("/{bizno}/categories/{bizCatCd}")
+	public ApiResponse<BizCatResponse> updateCategory(
+			@PathVariable String bizno, @PathVariable String bizCatCd, @RequestBody BizCatRequest request) {
+		return ApiResponse.ok(bizService.updateCategory(bizno, bizCatCd, request));
+	}
+
+	@DeleteMapping("/{bizno}/categories/{bizCatCd}")
+	public ApiResponse<Void> deleteCategory(@PathVariable String bizno, @PathVariable String bizCatCd) {
+		bizService.deleteCategory(bizno, bizCatCd);
+		return ApiResponse.ok(null);
 	}
 
 	@GetMapping("/{bizno}/menus")

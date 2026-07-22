@@ -11,4 +11,6 @@ public interface BizMenuRepository extends JpaRepository<BizMenu, String> {
 	List<BizMenu> findByBizRegNoAndBizCatCdOrderBySortOrdAsc(String bizRegNo, String bizCatCd);
 
 	List<BizMenu> findByBizRegNoAndMenuNmContaining(String bizRegNo, String menuNm);
+
+	boolean existsByBizRegNoAndBizCatCd(String bizRegNo, String bizCatCd);
 }
