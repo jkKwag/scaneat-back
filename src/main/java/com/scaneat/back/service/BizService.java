@@ -125,9 +125,8 @@ public class BizService {
 
 	@Transactional
 	public BizMenuResponse createMenu(String bizRegNo, BizMenuRequest request) {
-		int sortOrd = request.sortOrd() != null
-				? request.sortOrd()
-				: bizMenuRepository.findByBizRegNoOrderBySortOrdAsc(bizRegNo).size() + 1;
+		// 정렬순서를 비워두면(자동) 0으로 설정해 목록 맨 위로 오도록 한다.
+		int sortOrd = request.sortOrd() != null ? request.sortOrd() : 0;
 		BizMenu menu = BizMenu.builder()
 				.menuCd(generateMenuCd())
 				.bizRegNo(bizRegNo)
