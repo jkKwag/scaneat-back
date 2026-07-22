@@ -5,12 +5,15 @@ import com.scaneat.back.dto.admin.AdminLoginRequest;
 import com.scaneat.back.dto.admin.AdminLoginResponse;
 import com.scaneat.back.dto.admin.AdminUsrResponse;
 import com.scaneat.back.dto.admin.SysMenuResponse;
+import com.scaneat.back.dto.common.PasswordChangeRequest;
 import com.scaneat.back.service.AdminService;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -36,5 +39,17 @@ public class AdminController {
 	@GetMapping("/users")
 	public ApiResponse<List<AdminUsrResponse>> getUsers(@RequestParam String bizRegNo) {
 		return ApiResponse.ok(adminService.getUsersByBiz(bizRegNo));
+	}
+
+	@PutMapping("/users/{adminId}/password")
+	public ApiResponse<Void> changePassword(@PathVariable String adminId, @Valid @RequestBody PasswordChangeRequest request) {
+		adminService.changePassword(adminId, request.newPassword());
+		return ApiResponse.ok(null);
+	}
+
+	@PutMapping("/employees/{empId}/password")
+	public ApiResponse<Void> changeEmployeePassword(@PathVariable String empId, @Valid @RequestBody PasswordChangeRequest request) {
+		adminService.changeEmployeePassword(empId, request.newPassword());
+		return ApiResponse.ok(null);
 	}
 }

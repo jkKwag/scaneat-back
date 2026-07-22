@@ -1,6 +1,7 @@
 package com.scaneat.back.service;
 
 import com.scaneat.back.common.exception.BusinessException;
+import com.scaneat.back.common.exception.ResourceNotFoundException;
 import com.scaneat.back.dto.admin.AdminLoginRequest;
 import com.scaneat.back.dto.admin.AdminLoginResponse;
 import com.scaneat.back.dto.admin.AdminUsrResponse;
@@ -56,6 +57,22 @@ public class AdminService {
 		return adminUsrRepository.findByBizRegNoOrderByRegDtAsc(bizRegNo).stream()
 				.map(AdminUsrResponse::from)
 				.toList();
+	}
+
+	@Transactional
+	public void changePassword(String adminId, String newPassword) {
+		AdminUsr admin = adminUsrRepository.findById(adminId)
+				.orElseThrow(() -> new ResourceNotFoundException("관리자 계정을 찾을 수 없습니다: " + adminId));
+		admin.setPasswordHash(passwordEncoder.encode(newPassword));
+		adminUsrRepository.save(admin);
+	}
+
+	@Transactional
+	public void changeEmployeePassword(String empId, String newPassword) {
+		BizEmp emp = bizEmpRepository.findById(empId)
+				.orElseThrow(() -> new ResourceNotFoundException("직원 계정을 찾을 수 없습니다: " + empId));
+		emp.setPasswordHash(passwordEncoder.encode(newPassword));
+		bizEmpRepository.save(emp);
 	}
 
 	public List<SysMenuResponse> getMenuTree(String adminRole) {
