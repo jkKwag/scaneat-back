@@ -33,6 +33,7 @@ public class AdminService {
 	private static final String INVALID_CREDENTIALS_MESSAGE = "아이디 또는 비밀번호가 올바르지 않습니다.";
 	private static final String FORBIDDEN_MESSAGE = "본인 계정의 비밀번호만 변경할 수 있습니다.";
 	private static final String WRONG_CURRENT_PASSWORD_MESSAGE = "현재 비밀번호가 일치하지 않습니다.";
+	private static final String SAME_PASSWORD_MESSAGE = "현재 비밀번호와 다른 비밀번호로 설정해주세요.";
 
 	private final AdminUsrRepository adminUsrRepository;
 	private final BizEmpRepository bizEmpRepository;
@@ -72,6 +73,9 @@ public class AdminService {
 		if (!passwordEncoder.matches(request.currentPassword(), admin.getPasswordHash())) {
 			throw new BusinessException(HttpStatus.UNAUTHORIZED, WRONG_CURRENT_PASSWORD_MESSAGE);
 		}
+		if (passwordEncoder.matches(request.newPassword(), admin.getPasswordHash())) {
+			throw new BusinessException(HttpStatus.BAD_REQUEST, SAME_PASSWORD_MESSAGE);
+		}
 		admin.setPasswordHash(passwordEncoder.encode(request.newPassword()));
 		adminUsrRepository.save(admin);
 	}
@@ -83,6 +87,9 @@ public class AdminService {
 				.orElseThrow(() -> new ResourceNotFoundException("직원 계정을 찾을 수 없습니다: " + empId));
 		if (!passwordEncoder.matches(request.currentPassword(), emp.getPasswordHash())) {
 			throw new BusinessException(HttpStatus.UNAUTHORIZED, WRONG_CURRENT_PASSWORD_MESSAGE);
+		}
+		if (passwordEncoder.matches(request.newPassword(), emp.getPasswordHash())) {
+			throw new BusinessException(HttpStatus.BAD_REQUEST, SAME_PASSWORD_MESSAGE);
 		}
 		emp.setPasswordHash(passwordEncoder.encode(request.newPassword()));
 		bizEmpRepository.save(emp);
