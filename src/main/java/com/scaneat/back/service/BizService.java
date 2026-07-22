@@ -1,5 +1,6 @@
 package com.scaneat.back.service;
 
+import com.scaneat.back.client.SupabaseStorageClient;
 import com.scaneat.back.common.exception.BusinessException;
 import com.scaneat.back.common.exception.ResourceNotFoundException;
 import com.scaneat.back.dto.biz.BizCatResponse;
@@ -16,6 +17,7 @@ import com.scaneat.back.dto.biz.BizRsvnStdRequest;
 import com.scaneat.back.dto.biz.BizRsvnStdResponse;
 import com.scaneat.back.dto.biz.BizSeatResponse;
 import com.scaneat.back.dto.biz.BizSeatRequest;
+import com.scaneat.back.dto.biz.ImageUploadResponse;
 import com.scaneat.back.entity.Biz;
 import com.scaneat.back.entity.BizHourStd;
 import com.scaneat.back.entity.BizHourStdId;
@@ -30,6 +32,7 @@ import com.scaneat.back.repository.BizMenuRepository;
 import com.scaneat.back.repository.BizRepository;
 import com.scaneat.back.repository.BizRsvnStdRepository;
 import com.scaneat.back.repository.BizSeatRepository;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -40,6 +43,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -47,6 +51,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class BizService {
 
 	private final BizRepository bizRepository;
+	private final SupabaseStorageClient supabaseStorageClient;
 	private final BizCatRepository bizCatRepository;
 	private final BizMenuRepository bizMenuRepository;
 	private final BizHourStdRepository bizHourStdRepository;
@@ -298,6 +303,25 @@ public class BizService {
 		return bizEmpRepository.findByBizRegNoOrderByRegDtAsc(bizRegNo).stream()
 				.map(BizEmpResponse::from)
 				.toList();
+	}
+
+	// 프론트에서 리사이징/압축까지 마친 이미지를 받아 Supabase Storage(menu-image 버킷)에 서버가 대신 업로드한다.
+	// service_role 키는 서버에만 있으므로 클라이언트에 노출되지 않는다.
+	public ImageUploadResponse uploadMenuImage(String bizRegNo, MultipartFile file) {
+		if (file.isEmpty()) {
+			throw new BusinessException(HttpStatus.BAD_REQUEST, "업로드할 파일이 없습니다.");
+		}
+		String contentType = file.getContentType();
+		if (contentType == null || !contentType.startsWith("image/")) {
+			throw new BusinessException(HttpStatus.BAD_REQUEST, "이미지 파일만 업로드할 수 있습니다.");
+		}
+		String path = bizRegNo + "/" + System.currentTimeMillis() + ".jpg";
+		try {
+			String url = supabaseStorageClient.upload("menu-image", path, file.getBytes(), "image/jpeg");
+			return new ImageUploadResponse(url);
+		} catch (IOException e) {
+			throw new BusinessException(HttpStatus.BAD_REQUEST, "파일을 읽을 수 없습니다.");
+		}
 	}
 
 	private String generateSeatCd(String bizRegNo) {
