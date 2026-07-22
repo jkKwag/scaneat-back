@@ -10,4 +10,6 @@ public interface BizEmpRepository extends JpaRepository<BizEmp, String> {
 	List<BizEmp> findByBizRegNoOrderByRegDtAsc(String bizRegNo);
 
 	Optional<BizEmp> findByEmpIdAndUseYn(String empId, String useYn);
+
+	long countByUseYn(String useYn);
 }

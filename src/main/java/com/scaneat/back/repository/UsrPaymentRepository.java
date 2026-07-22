@@ -19,4 +19,14 @@ public interface UsrPaymentRepository extends JpaRepository<UsrPayment, String> 
 	List<UsrPayment> findByBizRegNoOrderByRegDtDesc(String bizRegNo);
 
 	List<UsrPayment> findByBizRegNoAndApprovedDtBetweenOrderByApprovedDtDesc(String bizRegNo, LocalDateTime from, LocalDateTime to);
+
+	// 결제완료(DONE) 건 기준, 사업장별 총매출 상위 N개
+	@Query(value = "SELECT p.biz_reg_no AS bizRegNo, b.biz_nm AS bizNm, "
+			+ "SUM(p.total_amount) AS totalAmount, COUNT(*) AS paymentCount "
+			+ "FROM tb_usr_payment p JOIN tb_biz b ON b.biz_reg_no = p.biz_reg_no "
+			+ "WHERE p.status = 'DONE' "
+			+ "GROUP BY p.biz_reg_no, b.biz_nm "
+			+ "ORDER BY SUM(p.total_amount) DESC "
+			+ "LIMIT :limit", nativeQuery = true)
+	List<BizRevenueRankProjection> findTopBizByRevenue(@Param("limit") int limit);
 }
