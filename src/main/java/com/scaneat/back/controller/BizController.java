@@ -15,10 +15,12 @@ import com.scaneat.back.dto.biz.BizRsvnStdRequest;
 import com.scaneat.back.dto.biz.BizRsvnStdResponse;
 import com.scaneat.back.dto.biz.BizSeatRequest;
 import com.scaneat.back.dto.biz.BizSeatResponse;
+import com.scaneat.back.dto.biz.ImageUploadResponse;
 import com.scaneat.back.service.BizService;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/biz")
@@ -135,5 +138,10 @@ public class BizController {
 	@GetMapping("/{bizno}/employees")
 	public ApiResponse<List<BizEmpResponse>> getEmployees(@PathVariable String bizno) {
 		return ApiResponse.ok(bizService.getEmployees(bizno));
+	}
+
+	@PostMapping(value = "/{bizno}/menu-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public ApiResponse<ImageUploadResponse> uploadMenuImage(@PathVariable String bizno, @RequestParam("file") MultipartFile file) {
+		return ApiResponse.ok(bizService.uploadMenuImage(bizno, file));
 	}
 }

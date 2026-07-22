@@ -20,6 +20,10 @@ spring:
     show-sql: true
   jackson:
     default-property-inclusion: non_null
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
 
 app:
   cors:
@@ -33,6 +37,10 @@ gemini:
   api-key: ${GEMINI_API_KEY}
   model: gemini-2.0-flash
   base-url: https://generativelanguage.googleapis.com/v1beta
+
+supabase:
+  service-role-key: ${SUPABASE_SERVICE_ROLE_KEY}
+  base-url: https://zhtqkjorhhqnnhgsddmn.supabase.co
 
 logging:
   level:

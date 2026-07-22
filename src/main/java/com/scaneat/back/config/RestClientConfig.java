@@ -17,4 +17,9 @@ public class RestClientConfig {
 	public RestClient geminiRestClient(@Value("${gemini.base-url}") String baseUrl) {
 		return RestClient.builder().baseUrl(baseUrl).build();
 	}
+
+	@Bean
+	public RestClient supabaseRestClient(@Value("${supabase.base-url}") String baseUrl) {
+		return RestClient.builder().baseUrl(baseUrl).build();
+	}
 }
