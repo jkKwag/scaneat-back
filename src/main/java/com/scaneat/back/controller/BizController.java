@@ -144,4 +144,9 @@ public class BizController {
 	public ApiResponse<ImageUploadResponse> uploadMenuImage(@PathVariable String bizno, @RequestParam("file") MultipartFile file) {
 		return ApiResponse.ok(bizService.uploadMenuImage(bizno, file));
 	}
+
+	@PostMapping(value = "/{bizno}/seat-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public ApiResponse<ImageUploadResponse> uploadSeatImage(@PathVariable String bizno, @RequestParam("file") MultipartFile file) {
+		return ApiResponse.ok(bizService.uploadSeatImage(bizno, file));
+	}
 }
