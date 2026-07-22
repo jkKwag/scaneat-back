@@ -253,9 +253,8 @@ public class BizService {
 	@Transactional
 	public BizSeatResponse createSeat(String bizRegNo, BizSeatRequest request) {
 		LocalDateTime now = LocalDateTime.now();
-		int sortOrd = request.sortOrd() != null
-				? request.sortOrd()
-				: bizSeatRepository.findById_BizRegNoOrderBySortOrdAsc(bizRegNo).size() + 1;
+		// 정렬순서를 비워두면(자동) 0으로 설정해 목록 맨 위로 오도록 한다.
+		int sortOrd = request.sortOrd() != null ? request.sortOrd() : 0;
 		BizSeat seat = BizSeat.builder()
 				.id(new BizSeatId(bizRegNo, generateSeatCd(bizRegNo)))
 				.seatNm(request.seatNm())
@@ -304,9 +303,17 @@ public class BizService {
 				.toList();
 	}
 
-	// 프론트에서 리사이징/압축까지 마친 이미지를 받아 Supabase Storage(menu-image 버킷)에 서버가 대신 업로드한다.
+	// 프론트에서 리사이징/압축까지 마친 이미지를 받아 Supabase Storage에 서버가 대신 업로드한다.
 	// service_role 키는 서버에만 있으므로 클라이언트에 노출되지 않는다.
 	public ImageUploadResponse uploadMenuImage(String bizRegNo, MultipartFile file) {
+		return uploadImage("menu-image", bizRegNo, file);
+	}
+
+	public ImageUploadResponse uploadSeatImage(String bizRegNo, MultipartFile file) {
+		return uploadImage("seat-image", bizRegNo, file);
+	}
+
+	private ImageUploadResponse uploadImage(String bucket, String bizRegNo, MultipartFile file) {
 		if (file.isEmpty()) {
 			throw new BusinessException(HttpStatus.BAD_REQUEST, "업로드할 파일이 없습니다.");
 		}
@@ -316,7 +323,7 @@ public class BizService {
 		}
 		String path = bizRegNo + "/" + System.currentTimeMillis() + ".jpg";
 		try {
-			String url = supabaseStorageClient.upload("menu-image", path, file.getBytes(), "image/jpeg");
+			String url = supabaseStorageClient.upload(bucket, path, file.getBytes(), "image/jpeg");
 			return new ImageUploadResponse(url);
 		} catch (IOException e) {
 			throw new BusinessException(HttpStatus.BAD_REQUEST, "파일을 읽을 수 없습니다.");
