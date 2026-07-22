@@ -6,6 +6,8 @@ import com.scaneat.back.dto.admin.AdminLoginResponse;
 import com.scaneat.back.dto.admin.AdminUsrResponse;
 import com.scaneat.back.dto.admin.SysMenuResponse;
 import com.scaneat.back.dto.common.PasswordChangeRequest;
+import com.scaneat.back.dto.common.PasswordVerifyRequest;
+import com.scaneat.back.dto.common.PasswordVerifyResponse;
 import com.scaneat.back.service.AdminService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -51,5 +53,15 @@ public class AdminController {
 	public ApiResponse<Void> changeEmployeePassword(@PathVariable String empId, @Valid @RequestBody PasswordChangeRequest request) {
 		adminService.changeEmployeePassword(empId, request);
 		return ApiResponse.ok(null);
+	}
+
+	@PostMapping("/users/{adminId}/verify-password")
+	public ApiResponse<PasswordVerifyResponse> verifyPassword(@PathVariable String adminId, @Valid @RequestBody PasswordVerifyRequest request) {
+		return ApiResponse.ok(adminService.verifyPassword(adminId, request));
+	}
+
+	@PostMapping("/employees/{empId}/verify-password")
+	public ApiResponse<PasswordVerifyResponse> verifyEmployeePassword(@PathVariable String empId, @Valid @RequestBody PasswordVerifyRequest request) {
+		return ApiResponse.ok(adminService.verifyEmployeePassword(empId, request));
 	}
 }
