@@ -3,10 +3,13 @@ package com.scaneat.back.service;
 import com.scaneat.back.common.exception.BusinessException;
 import com.scaneat.back.common.exception.ResourceNotFoundException;
 import com.scaneat.back.common.security.CurrentAdmin;
+import com.scaneat.back.common.security.TotpUtil;
 import com.scaneat.back.dto.admin.AdminLoginRequest;
 import com.scaneat.back.dto.admin.AdminLoginResponse;
 import com.scaneat.back.dto.admin.AdminUsrResponse;
 import com.scaneat.back.dto.admin.SysMenuResponse;
+import com.scaneat.back.dto.admin.TotpConfirmRequest;
+import com.scaneat.back.dto.admin.TotpSetupResponse;
 import com.scaneat.back.dto.common.PasswordChangeRequest;
 import com.scaneat.back.dto.common.PasswordVerifyRequest;
 import com.scaneat.back.dto.common.PasswordVerifyResponse;
@@ -40,6 +43,10 @@ public class AdminService {
 	private static final String FORBIDDEN_MESSAGE = "본인 계정의 비밀번호만 변경할 수 있습니다.";
 	private static final String WRONG_CURRENT_PASSWORD_MESSAGE = "현재 비밀번호가 일치하지 않습니다.";
 	private static final String SAME_PASSWORD_MESSAGE = "현재 비밀번호와 다른 비밀번호로 설정해주세요.";
+	// 프론트가 이 메시지를 보고 인증 코드 입력창을 띄운다 (로그인 실패가 아니라 추가 단계 필요 신호).
+	private static final String TOTP_REQUIRED_MESSAGE = "TOTP_REQUIRED";
+	private static final String TOTP_INVALID_MESSAGE = "인증 코드가 올바르지 않습니다.";
+	private static final String SUPER_ONLY_MESSAGE = "슈퍼관리자만 설정할 수 있습니다.";
 	private static final long SESSION_TTL_HOURS = 12;
 
 	private final AdminUsrRepository adminUsrRepository;
@@ -57,6 +64,15 @@ public class AdminService {
 		if (admin.isPresent()) {
 			if (!passwordEncoder.matches(request.password(), admin.get().getPasswordHash())) {
 				throw new BusinessException(HttpStatus.UNAUTHORIZED, INVALID_CREDENTIALS_MESSAGE);
+			}
+			// TOTP를 등록한 계정만 추가 단계가 필요하다 — 등록 전까지는 비밀번호만으로 로그인된다.
+			if (admin.get().getTotpSecret() != null) {
+				if (request.totpCode() == null || request.totpCode().isBlank()) {
+					throw new BusinessException(HttpStatus.UNAUTHORIZED, TOTP_REQUIRED_MESSAGE);
+				}
+				if (!TotpUtil.verifyCode(admin.get().getTotpSecret(), request.totpCode())) {
+					throw new BusinessException(HttpStatus.UNAUTHORIZED, TOTP_INVALID_MESSAGE);
+				}
 			}
 			String token = issueSession(admin.get().getAdminId(), admin.get().getAdminRole().name(), admin.get().getBizRegNo());
 			return AdminLoginResponse.from(admin.get(), token);
@@ -146,6 +162,31 @@ public class AdminService {
 	private void checkSelfOrSuper(String targetId, CurrentAdmin requester) {
 		if (!requester.isSuper() && !requester.adminId().equals(targetId)) {
 			throw new BusinessException(HttpStatus.FORBIDDEN, FORBIDDEN_MESSAGE);
+		}
+	}
+
+	// 새 비밀키를 생성해서 보여주기만 하고 아직 저장하지 않는다 — 등록 화면에서 사용자가
+	// 실제로 그 키로 코드를 만들어낼 수 있음을 confirmTotp에서 증명해야 저장된다.
+	public TotpSetupResponse setupTotp(CurrentAdmin requester) {
+		requireSuper(requester);
+		return new TotpSetupResponse(TotpUtil.generateSecret());
+	}
+
+	@Transactional
+	public void confirmTotp(CurrentAdmin requester, TotpConfirmRequest request) {
+		requireSuper(requester);
+		if (!TotpUtil.verifyCode(request.secret(), request.code())) {
+			throw new BusinessException(HttpStatus.BAD_REQUEST, TOTP_INVALID_MESSAGE);
+		}
+		AdminUsr admin = adminUsrRepository.findById(requester.adminId())
+				.orElseThrow(() -> new ResourceNotFoundException("관리자 계정을 찾을 수 없습니다: " + requester.adminId()));
+		admin.setTotpSecret(request.secret());
+		adminUsrRepository.save(admin);
+	}
+
+	private void requireSuper(CurrentAdmin requester) {
+		if (!requester.isSuper()) {
+			throw new BusinessException(HttpStatus.FORBIDDEN, SUPER_ONLY_MESSAGE);
 		}
 	}
 
