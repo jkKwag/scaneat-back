@@ -29,13 +29,18 @@ public class Biz {
 	@Column(name = "tel_no", length = 20)
 	private String telNo;
 
+	@Column(name = "mobile_tel", length = 20)
+	private String mobileTel;
+
 	@Column(name = "email_addr", length = 100)
 	private String emailAddr;
 
 	@Column(name = "ind_cd", length = 20)
 	private String indCd;
 
-	@Column(name = "rep_nm", length = 50, nullable = false)
+	// 셀프 가입 시에는 대표자명을 받지 않고 나중에 사업자등록증 이미지 인식으로 채울 예정이라 nullable.
+	// 관리자가 수동 등록(createBiz)할 때는 여전히 필수로 검증한다.
+	@Column(name = "rep_nm", length = 50)
 	private String repNm;
 
 	@Column(name = "opr_stt_cd", length = 1)
