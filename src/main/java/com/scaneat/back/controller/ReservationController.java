@@ -1,6 +1,7 @@
 package com.scaneat.back.controller;
 
 import com.scaneat.back.common.ApiResponse;
+import com.scaneat.back.dto.reservation.ReservationAvailabilityResponse;
 import com.scaneat.back.dto.reservation.ReservationRequest;
 import com.scaneat.back.dto.reservation.ReservationResponse;
 import com.scaneat.back.dto.reservation.ReservationStatusUpdateRequest;
@@ -45,6 +46,15 @@ public class ReservationController {
 			return ApiResponse.ok(reservationService.getReservationsByBiz(bizRegNo, from, to));
 		}
 		return ApiResponse.ok(reservationService.getReservationsByBiz(bizRegNo, date));
+	}
+
+	// 손님이 예약 화면에서 날짜별 예약 가능 시간을 확인할 때 쓰는 공개 API — 개인정보 없이
+	// 좌석/시간/상태만 내려준다. 위 getReservationsByBiz(관리자용 전체 조회)와는 분리되어 있다.
+	@GetMapping("/biz/{bizRegNo}/availability")
+	public ApiResponse<List<ReservationAvailabilityResponse>> getAvailabilityByBiz(
+			@PathVariable String bizRegNo,
+			@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+		return ApiResponse.ok(reservationService.getAvailabilityByBiz(bizRegNo, date));
 	}
 
 	@PostMapping
