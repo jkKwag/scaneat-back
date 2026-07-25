@@ -15,11 +15,13 @@ import com.scaneat.back.dto.common.PasswordVerifyRequest;
 import com.scaneat.back.dto.common.PasswordVerifyResponse;
 import com.scaneat.back.entity.AdminSession;
 import com.scaneat.back.entity.AdminUsr;
+import com.scaneat.back.entity.Biz;
 import com.scaneat.back.entity.BizEmp;
 import com.scaneat.back.entity.SysMenu;
 import com.scaneat.back.repository.AdminSessionRepository;
 import com.scaneat.back.repository.AdminUsrRepository;
 import com.scaneat.back.repository.BizEmpRepository;
+import com.scaneat.back.repository.BizRepository;
 import com.scaneat.back.repository.SysMenuRepository;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -54,6 +56,7 @@ public class AdminService {
 
 	private final AdminUsrRepository adminUsrRepository;
 	private final BizEmpRepository bizEmpRepository;
+	private final BizRepository bizRepository;
 	private final SysMenuRepository sysMenuRepository;
 	private final AdminSessionRepository adminSessionRepository;
 	private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
@@ -81,6 +84,8 @@ public class AdminService {
 			return AdminLoginResponse.from(admin.get(), token);
 		}
 
+		checkPendingBizSignup(request);
+
 		BizEmp emp = bizEmpRepository.findByEmpIdAndUseYn(request.adminId(), "Y")
 				.orElseThrow(() -> new BusinessException(HttpStatus.UNAUTHORIZED, INVALID_CREDENTIALS_MESSAGE));
 		if (!passwordEncoder.matches(request.password(), emp.getPasswordHash())) {
@@ -88,6 +93,24 @@ public class AdminService {
 		}
 		String token = issueSession(emp.getEmpId(), "EMPLOYEE", emp.getBizRegNo());
 		return AdminLoginResponse.fromEmployee(emp, token);
+	}
+
+	// 셀프 가입 후 승인 대기(useYn=N)라 위 조회에 안 걸린 계정에게, 비밀번호가 맞을 때만
+	// 더 정확한 안내를 준다 — 비밀번호를 모르는 사람에게는 계정 존재 여부를 알려주지 않기 위해
+	// 항상 비밀번호 일치를 먼저 확인한 뒤에만 이 메시지를 노출한다.
+	private void checkPendingBizSignup(AdminLoginRequest request) {
+		AdminUsr disabled = adminUsrRepository.findById(request.adminId()).orElse(null);
+		if (disabled == null || !passwordEncoder.matches(request.password(), disabled.getPasswordHash())) {
+			return;
+		}
+		Biz biz = bizRepository.findById(disabled.getBizRegNo()).orElse(null);
+		if (biz == null) return;
+		if ("PENDING".equals(biz.getApprovalStatus())) {
+			throw new BusinessException(HttpStatus.FORBIDDEN, "사업자 가입 승인 대기 중입니다. 승인 후 로그인할 수 있어요.");
+		}
+		if ("REJECTED".equals(biz.getApprovalStatus())) {
+			throw new BusinessException(HttpStatus.FORBIDDEN, "가입이 거부되었습니다: " + biz.getRejectRsn());
+		}
 	}
 
 	// 위조 불가능한 무작위 세션 토큰을 발급해 DB에 저장한다 — 로그아웃/비밀번호 변경 시

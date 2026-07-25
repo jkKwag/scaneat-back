@@ -1,10 +1,15 @@
 package com.scaneat.back.controller;
 
 import com.scaneat.back.common.ApiResponse;
+import com.scaneat.back.common.security.CurrentAdmin;
+import com.scaneat.back.dto.biz.BizApprovalResponse;
 import com.scaneat.back.dto.biz.BizCatRequest;
 import com.scaneat.back.dto.biz.BizCatResponse;
 import com.scaneat.back.dto.biz.BizEmpResponse;
 import com.scaneat.back.dto.biz.BizCreateRequest;
+import com.scaneat.back.dto.biz.BizRejectRequest;
+import com.scaneat.back.dto.biz.BizSignupRequest;
+import com.scaneat.back.dto.biz.BizSignupResponse;
 import com.scaneat.back.dto.biz.BizUpdateRequest;
 import com.scaneat.back.dto.biz.BizHourRequest;
 import com.scaneat.back.dto.biz.BizHourResponse;
@@ -18,6 +23,7 @@ import com.scaneat.back.dto.biz.BizSeatRequest;
 import com.scaneat.back.dto.biz.BizSeatResponse;
 import com.scaneat.back.dto.biz.ImageUploadResponse;
 import com.scaneat.back.service.BizService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -55,6 +61,39 @@ public class BizController {
 	@PostMapping
 	public ApiResponse<BizResponse> createBiz(@RequestBody BizCreateRequest request) {
 		return ApiResponse.ok(bizService.createBiz(request));
+	}
+
+	// 손님/사업자가 직접 신청하는 셀프 가입 — 로그인 없이 열려있는 공개 API (WebConfig에서 제외 처리)
+	@PostMapping("/signup")
+	public ApiResponse<BizSignupResponse> signup(@Valid @RequestBody BizSignupRequest request) {
+		return ApiResponse.ok(bizService.signup(request));
+	}
+
+	// 가입 직후(로그인 전) 사업자등록증 업로드 — signupToken으로 본인 가입건인지 확인
+	@PostMapping(value = "/{bizno}/registration-cert", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public ApiResponse<Void> uploadRegistrationCert(
+			@PathVariable String bizno, @RequestParam String signupToken, @RequestParam("file") MultipartFile file) {
+		bizService.uploadRegistrationCert(bizno, signupToken, file);
+		return ApiResponse.ok(null);
+	}
+
+	// SUPER 전용 — 승인 대기 중인 가입건 목록
+	@GetMapping("/approvals")
+	public ApiResponse<List<BizApprovalResponse>> getPendingApprovals(HttpServletRequest httpRequest) {
+		return ApiResponse.ok(bizService.getPendingApprovals(currentAdmin(httpRequest)));
+	}
+
+	@PutMapping("/{bizno}/approve")
+	public ApiResponse<Void> approveBiz(@PathVariable String bizno, HttpServletRequest httpRequest) {
+		bizService.approveBiz(bizno, currentAdmin(httpRequest));
+		return ApiResponse.ok(null);
+	}
+
+	@PutMapping("/{bizno}/reject")
+	public ApiResponse<Void> rejectBiz(
+			@PathVariable String bizno, @Valid @RequestBody BizRejectRequest request, HttpServletRequest httpRequest) {
+		bizService.rejectBiz(bizno, request, currentAdmin(httpRequest));
+		return ApiResponse.ok(null);
 	}
 
 	@PutMapping("/{bizno}")
@@ -166,5 +205,9 @@ public class BizController {
 	@PostMapping(value = "/{bizno}/seat-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ApiResponse<ImageUploadResponse> uploadSeatImage(@PathVariable String bizno, @RequestParam("file") MultipartFile file) {
 		return ApiResponse.ok(bizService.uploadSeatImage(bizno, file));
+	}
+
+	private CurrentAdmin currentAdmin(HttpServletRequest request) {
+		return (CurrentAdmin) request.getAttribute(CurrentAdmin.REQUEST_ATTR);
 	}
 }

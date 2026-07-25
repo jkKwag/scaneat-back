@@ -1,6 +1,7 @@
 package com.scaneat.back.client;
 
 import com.scaneat.back.common.exception.BusinessException;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -41,6 +42,30 @@ public class SupabaseStorageClient {
 		} catch (RestClientResponseException ex) {
 			throw new BusinessException(HttpStatus.valueOf(ex.getStatusCode().value()),
 					"이미지 업로드에 실패했습니다: " + ex.getResponseBodyAsString());
+		}
+	}
+
+	// 비공개(private) 버킷의 파일을 잠시만 볼 수 있는 서명된 URL로 발급한다.
+	// 사업자등록증처럼 아무나 보면 안 되는 파일은 이 방식으로만 접근을 허용한다.
+	@SuppressWarnings("unchecked")
+	public String createSignedUrl(String bucket, String path, int expiresInSeconds) {
+		try {
+			Map<String, Object> response = supabaseRestClient.post()
+					.uri("/storage/v1/object/sign/{bucket}/{path}", bucket, path)
+					.header(HttpHeaders.AUTHORIZATION, "Bearer " + serviceRoleKey)
+					.header("apikey", serviceRoleKey)
+					.contentType(MediaType.APPLICATION_JSON)
+					.body(Map.of("expiresIn", expiresInSeconds))
+					.retrieve()
+					.body(Map.class);
+			String signedUrl = response != null ? (String) response.get("signedURL") : null;
+			if (signedUrl == null) {
+				throw new BusinessException(HttpStatus.BAD_GATEWAY, "서명된 URL 발급에 실패했습니다.");
+			}
+			return baseUrl + "/storage/v1" + signedUrl;
+		} catch (RestClientResponseException ex) {
+			throw new BusinessException(HttpStatus.valueOf(ex.getStatusCode().value()),
+					"파일 조회에 실패했습니다: " + ex.getResponseBodyAsString());
 		}
 	}
 }
