@@ -1,5 +1,6 @@
 package com.scaneat.back.service;
 
+import com.scaneat.back.common.exception.BusinessException;
 import com.scaneat.back.common.exception.ResourceNotFoundException;
 import com.scaneat.back.dto.order.OrderItemOptionRequest;
 import com.scaneat.back.dto.order.OrderItemOptionResponse;
@@ -140,7 +141,12 @@ public class OrderService {
 	@Transactional
 	public OrderResponse updateStatus(String orderNo, OrderStatusUpdateRequest request) {
 		UsrOrder order = findOrder(orderNo);
-		order.setStatus(OrderStatus.valueOf(request.status().toUpperCase()));
+		OrderStatus nextStatus = OrderStatus.valueOf(request.status().toUpperCase());
+		// 주문취소는 주방에서 준비를 시작하기 전(주문접수 단계)에만 허용한다.
+		if (nextStatus == OrderStatus.CANCELED && order.getStatus() != OrderStatus.RECEIVED) {
+			throw new BusinessException("이미 준비가 시작된 주문은 취소할 수 없습니다.");
+		}
+		order.setStatus(nextStatus);
 		order.setUpdDt(LocalDateTime.now());
 		OrderResponse response = buildOrderResponse(order);
 		orderEventService.notifyOrderUpdated(order.getUuid(), response);
