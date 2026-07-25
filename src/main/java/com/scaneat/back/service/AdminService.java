@@ -9,12 +9,17 @@ import com.scaneat.back.dto.admin.SysMenuResponse;
 import com.scaneat.back.dto.common.PasswordChangeRequest;
 import com.scaneat.back.dto.common.PasswordVerifyRequest;
 import com.scaneat.back.dto.common.PasswordVerifyResponse;
+import com.scaneat.back.entity.AdminSession;
 import com.scaneat.back.entity.AdminUsr;
 import com.scaneat.back.entity.BizEmp;
 import com.scaneat.back.entity.SysMenu;
+import com.scaneat.back.repository.AdminSessionRepository;
 import com.scaneat.back.repository.AdminUsrRepository;
 import com.scaneat.back.repository.BizEmpRepository;
 import com.scaneat.back.repository.SysMenuRepository;
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -34,21 +39,26 @@ public class AdminService {
 	private static final String FORBIDDEN_MESSAGE = "본인 계정의 비밀번호만 변경할 수 있습니다.";
 	private static final String WRONG_CURRENT_PASSWORD_MESSAGE = "현재 비밀번호가 일치하지 않습니다.";
 	private static final String SAME_PASSWORD_MESSAGE = "현재 비밀번호와 다른 비밀번호로 설정해주세요.";
+	private static final long SESSION_TTL_HOURS = 12;
 
 	private final AdminUsrRepository adminUsrRepository;
 	private final BizEmpRepository bizEmpRepository;
 	private final SysMenuRepository sysMenuRepository;
+	private final AdminSessionRepository adminSessionRepository;
 	private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+	private final SecureRandom secureRandom = new SecureRandom();
 
 	// 관리자 계정(tb_admin_usr)과 직원 계정(tb_biz_emp)을 같은 로그인 화면에서 함께 조회한다.
 	// 두 테이블은 완전히 분리된 채로 두고, 로그인 시도만 순서대로 두 곳을 확인한다.
+	@Transactional
 	public AdminLoginResponse login(AdminLoginRequest request) {
 		Optional<AdminUsr> admin = adminUsrRepository.findByAdminIdAndUseYn(request.adminId(), "Y");
 		if (admin.isPresent()) {
 			if (!passwordEncoder.matches(request.password(), admin.get().getPasswordHash())) {
 				throw new BusinessException(HttpStatus.UNAUTHORIZED, INVALID_CREDENTIALS_MESSAGE);
 			}
-			return AdminLoginResponse.from(admin.get());
+			String token = issueSession(admin.get().getAdminId(), admin.get().getAdminRole().name(), admin.get().getBizRegNo());
+			return AdminLoginResponse.from(admin.get(), token);
 		}
 
 		BizEmp emp = bizEmpRepository.findByEmpIdAndUseYn(request.adminId(), "Y")
@@ -56,7 +66,27 @@ public class AdminService {
 		if (!passwordEncoder.matches(request.password(), emp.getPasswordHash())) {
 			throw new BusinessException(HttpStatus.UNAUTHORIZED, INVALID_CREDENTIALS_MESSAGE);
 		}
-		return AdminLoginResponse.fromEmployee(emp);
+		String token = issueSession(emp.getEmpId(), "EMPLOYEE", emp.getBizRegNo());
+		return AdminLoginResponse.fromEmployee(emp, token);
+	}
+
+	// 위조 불가능한 무작위 세션 토큰을 발급해 DB에 저장한다 — 로그아웃/비밀번호 변경 시
+	// 이 row만 지우면 즉시 무효화할 수 있고(JWT와 달리 서버가 상태를 들고 있음),
+	// 여러 대의 WAS로 이중화해도 같은 DB를 보므로 별도 처리 없이 그대로 동작한다.
+	private String issueSession(String adminId, String adminRole, String bizRegNo) {
+		byte[] randomBytes = new byte[32];
+		secureRandom.nextBytes(randomBytes);
+		String token = Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
+		LocalDateTime now = LocalDateTime.now();
+		adminSessionRepository.save(AdminSession.builder()
+				.token(token)
+				.adminId(adminId)
+				.adminRole(adminRole)
+				.bizRegNo(bizRegNo)
+				.issuedDt(now)
+				.expiresDt(now.plusHours(SESSION_TTL_HOURS))
+				.build());
+		return token;
 	}
 
 	public List<AdminUsrResponse> getUsersByBiz(String bizRegNo) {
