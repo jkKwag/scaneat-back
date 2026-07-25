@@ -1,13 +1,18 @@
 package com.scaneat.back.service;
 
+import com.scaneat.back.common.exception.BusinessException;
+import com.scaneat.back.common.exception.ResourceNotFoundException;
+import com.scaneat.back.common.security.CurrentAdmin;
 import com.scaneat.back.dto.menu.MenuOptionGroupRequest;
 import com.scaneat.back.dto.menu.MenuOptionGroupResponse;
 import com.scaneat.back.dto.menu.MenuOptionRequest;
 import com.scaneat.back.dto.menu.MenuOptionResponse;
+import com.scaneat.back.entity.BizMenu;
 import com.scaneat.back.entity.BizMenuOptCd;
 import com.scaneat.back.entity.BizMenuOptGrp;
 import com.scaneat.back.repository.BizMenuOptCdRepository;
 import com.scaneat.back.repository.BizMenuOptGrpRepository;
+import com.scaneat.back.repository.BizMenuRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -17,6 +22,7 @@ import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +33,7 @@ public class MenuService {
 
 	private final BizMenuOptGrpRepository bizMenuOptGrpRepository;
 	private final BizMenuOptCdRepository bizMenuOptCdRepository;
+	private final BizMenuRepository bizMenuRepository;
 
 	public List<MenuOptionGroupResponse> getMenuOptions(String menuCd) {
 		List<BizMenuOptCd> optionCodes = bizMenuOptCdRepository.findByMenuCdAndUseYnOrderBySortOrdAsc(menuCd, "Y");
@@ -47,7 +54,8 @@ public class MenuService {
 	}
 
 	@Transactional
-	public MenuOptionGroupResponse createOptionGroup(String menuCd, MenuOptionGroupRequest request) {
+	public MenuOptionGroupResponse createOptionGroup(String menuCd, MenuOptionGroupRequest request, CurrentAdmin requester) {
+		verifyOwnership(menuCd, requester);
 		LocalDateTime now = LocalDateTime.now();
 		String optGrpCd = generateOptGrpCd();
 
@@ -87,7 +95,8 @@ public class MenuService {
 	}
 
 	@Transactional
-	public MenuOptionResponse addOption(String menuCd, String optGrpCd, MenuOptionRequest request) {
+	public MenuOptionResponse addOption(String menuCd, String optGrpCd, MenuOptionRequest request, CurrentAdmin requester) {
+		verifyOwnership(menuCd, requester);
 		LocalDateTime now = LocalDateTime.now();
 		int sortOrd = bizMenuOptCdRepository.findByMenuCdAndOptGrpCd(menuCd, optGrpCd).size() + 1;
 		BizMenuOptCd code = BizMenuOptCd.builder()
@@ -106,13 +115,15 @@ public class MenuService {
 	}
 
 	@Transactional
-	public void deleteOption(String menuCd, String optGrpCd, String optCd) {
+	public void deleteOption(String menuCd, String optGrpCd, String optCd, CurrentAdmin requester) {
+		verifyOwnership(menuCd, requester);
 		bizMenuOptCdRepository.deleteById(optCd);
 		cleanupOrphanGroup(optGrpCd);
 	}
 
 	@Transactional
-	public void deleteOptionGroup(String menuCd, String optGrpCd) {
+	public void deleteOptionGroup(String menuCd, String optGrpCd, CurrentAdmin requester) {
+		verifyOwnership(menuCd, requester);
 		List<BizMenuOptCd> codes = bizMenuOptCdRepository.findByMenuCdAndOptGrpCd(menuCd, optGrpCd);
 		bizMenuOptCdRepository.deleteAll(codes);
 		cleanupOrphanGroup(optGrpCd);
@@ -123,6 +134,18 @@ public class MenuService {
 		List<BizMenuOptCd> codes = bizMenuOptCdRepository.findByMenuCd(menuCd);
 		bizMenuOptCdRepository.deleteAll(codes);
 		codes.stream().map(BizMenuOptCd::getOptGrpCd).distinct().forEach(this::cleanupOrphanGroup);
+	}
+
+	// 로그인은 했지만(다른 매장 관리자여도) 옵션을 건드리려는 메뉴가 실제 본인 매장 소유인지 확인한다.
+	// AdminAuthInterceptor의 일반 소유권 체크는 경로에 bizRegNo가 있을 때만 동작하는데,
+	// 이 API들은 menuCd만 경로에 있어서 여기서 별도로 DB를 조회해 확인해야 한다.
+	private void verifyOwnership(String menuCd, CurrentAdmin requester) {
+		if (requester.isSuper()) return;
+		BizMenu menu = bizMenuRepository.findById(menuCd)
+				.orElseThrow(() -> new ResourceNotFoundException("메뉴를 찾을 수 없습니다: " + menuCd));
+		if (!menu.getBizRegNo().equals(requester.bizRegNo())) {
+			throw new BusinessException(HttpStatus.FORBIDDEN, "다른 매장의 메뉴는 수정할 수 없습니다.");
+		}
 	}
 
 	private void cleanupOrphanGroup(String optGrpCd) {
