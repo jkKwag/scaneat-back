@@ -7,25 +7,28 @@ public record AdminLoginResponse(
 		String adminId,
 		String adminNm,
 		String adminRole,
-		String bizRegNo
+		String bizRegNo,
+		String token
 ) {
-	public static AdminLoginResponse from(AdminUsr admin) {
+	public static AdminLoginResponse from(AdminUsr admin, String token) {
 		return new AdminLoginResponse(
 				admin.getAdminId(),
 				admin.getAdminNm(),
 				admin.getAdminRole().name(),
-				admin.getBizRegNo()
+				admin.getBizRegNo(),
+				token
 		);
 	}
 
 	// 직원(tb_biz_emp) 계정으로 로그인한 경우 - adminRole 자리에 "EMPLOYEE"를 넣어
 	// 같은 로그인 화면/응답 형태를 그대로 재사용한다 (관리자 계정과 완전히 분리된 별도 테이블)
-	public static AdminLoginResponse fromEmployee(BizEmp emp) {
+	public static AdminLoginResponse fromEmployee(BizEmp emp, String token) {
 		return new AdminLoginResponse(
 				emp.getEmpId(),
 				emp.getEmpNm(),
 				"EMPLOYEE",
-				emp.getBizRegNo()
+				emp.getBizRegNo(),
+				token
 		);
 	}
 }
