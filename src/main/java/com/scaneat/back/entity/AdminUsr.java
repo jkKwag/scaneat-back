@@ -30,6 +30,11 @@ public class AdminUsr {
 	@Column(name = "password_hash", length = 200, nullable = false)
 	private String passwordHash;
 
+	// TOTP(구글 OTP 등) 2단계 인증용 비밀키 — 등록 전에는 null이며, 등록 전까지는
+	// 비밀번호만으로 로그인된다. SUPER 계정만 등록할 수 있다.
+	@Column(name = "totp_secret", length = 64)
+	private String totpSecret;
+
 	@Enumerated(EnumType.STRING)
 	@Column(name = "admin_role", length = 20, nullable = false)
 	private AdminRole adminRole;

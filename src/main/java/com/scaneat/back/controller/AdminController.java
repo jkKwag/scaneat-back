@@ -6,6 +6,8 @@ import com.scaneat.back.dto.admin.AdminLoginRequest;
 import com.scaneat.back.dto.admin.AdminLoginResponse;
 import com.scaneat.back.dto.admin.AdminUsrResponse;
 import com.scaneat.back.dto.admin.SysMenuResponse;
+import com.scaneat.back.dto.admin.TotpConfirmRequest;
+import com.scaneat.back.dto.admin.TotpSetupResponse;
 import com.scaneat.back.dto.common.PasswordChangeRequest;
 import com.scaneat.back.dto.common.PasswordVerifyRequest;
 import com.scaneat.back.dto.common.PasswordVerifyResponse;
@@ -69,6 +71,19 @@ public class AdminController {
 	public ApiResponse<PasswordVerifyResponse> verifyEmployeePassword(
 			@PathVariable String empId, @Valid @RequestBody PasswordVerifyRequest request, HttpServletRequest httpRequest) {
 		return ApiResponse.ok(adminService.verifyEmployeePassword(empId, request, currentAdmin(httpRequest)));
+	}
+
+	// 새 TOTP 비밀키 발급 (아직 저장 안 함) — SUPER 계정만 가능.
+	@PostMapping("/totp/setup")
+	public ApiResponse<TotpSetupResponse> setupTotp(HttpServletRequest httpRequest) {
+		return ApiResponse.ok(adminService.setupTotp(currentAdmin(httpRequest)));
+	}
+
+	// 등록 화면에서 입력한 코드가 실제로 그 비밀키로 맞게 생성됐는지 확인한 뒤에만 저장한다.
+	@PostMapping("/totp/confirm")
+	public ApiResponse<Void> confirmTotp(@Valid @RequestBody TotpConfirmRequest request, HttpServletRequest httpRequest) {
+		adminService.confirmTotp(currentAdmin(httpRequest), request);
+		return ApiResponse.ok(null);
 	}
 
 	// AdminAuthInterceptor가 세션 토큰을 검증하며 요청 속성에 담아둔 인증된 관리자 정보를 꺼낸다.
