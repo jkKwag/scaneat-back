@@ -1,6 +1,7 @@
 package com.scaneat.back.service;
 
 import com.scaneat.back.common.exception.ResourceNotFoundException;
+import com.scaneat.back.dto.reservation.ReservationAvailabilityResponse;
 import com.scaneat.back.dto.reservation.ReservationRequest;
 import com.scaneat.back.dto.reservation.ReservationResponse;
 import com.scaneat.back.dto.reservation.ReservationStatusUpdateRequest;
@@ -54,6 +55,16 @@ public class ReservationService {
 		LocalDateTime end = to.plusDays(1).atStartOfDay();
 		return usrRsvnRepository.findByBizRegNoAndRsvnDtBetweenOrderByRsvnDtDesc(bizRegNo, start, end).stream()
 				.map(ReservationResponse::from)
+				.toList();
+	}
+
+	// 손님이 예약 화면에서 특정 날짜의 예약 가능 시간을 확인할 때 쓰는 공개 조회 —
+	// 개인정보(guestName/guestPhone) 없이 좌석/시간/상태만 내려준다.
+	public List<ReservationAvailabilityResponse> getAvailabilityByBiz(String bizRegNo, LocalDate date) {
+		LocalDateTime from = date.atStartOfDay();
+		LocalDateTime to = date.plusDays(1).atStartOfDay();
+		return usrRsvnRepository.findByBizRegNoAndRsvnDtBetweenOrderByRsvnDtAsc(bizRegNo, from, to).stream()
+				.map(ReservationAvailabilityResponse::from)
 				.toList();
 	}
 

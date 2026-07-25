@@ -39,9 +39,12 @@ public class WebConfig implements WebMvcConfigurer {
 						"/api/dashboard/**",
 						"/api/order/biz/**",
 						"/api/payment/biz/**",
+						"/api/reservation/biz/**",
 						"/api/menu/*/option-groups/**",
 						"/api/biz",
 						"/api/biz/**")
-				.excludePathPatterns("/api/admin/login");
+				.excludePathPatterns(
+						"/api/admin/login",
+						"/api/reservation/biz/*/availability");
 	}
 }
