@@ -141,6 +141,7 @@ public class BizService {
 				.repNm(request.repNm())
 				.bizStatus("O")
 				.telNo(request.telNo())
+				.mobileTel(request.mobileTel())
 				.emailAddr(request.emailAddr())
 				.indCd(request.indCd())
 				.addr(request.addr())
