@@ -1,12 +1,18 @@
 package com.scaneat.back.service;
 
+import com.scaneat.back.client.NtsClient;
 import com.scaneat.back.client.SupabaseStorageClient;
 import com.scaneat.back.common.exception.BusinessException;
 import com.scaneat.back.common.exception.ResourceNotFoundException;
+import com.scaneat.back.common.security.CurrentAdmin;
+import com.scaneat.back.dto.biz.BizApprovalResponse;
 import com.scaneat.back.dto.biz.BizCatRequest;
 import com.scaneat.back.dto.biz.BizCatResponse;
 import com.scaneat.back.dto.biz.BizEmpResponse;
 import com.scaneat.back.dto.biz.BizCreateRequest;
+import com.scaneat.back.dto.biz.BizRejectRequest;
+import com.scaneat.back.dto.biz.BizSignupRequest;
+import com.scaneat.back.dto.biz.BizSignupResponse;
 import com.scaneat.back.dto.biz.BizUpdateRequest;
 import com.scaneat.back.dto.biz.BizHourRequest;
 import com.scaneat.back.dto.biz.BizHourResponse;
@@ -19,6 +25,8 @@ import com.scaneat.back.dto.biz.BizRsvnStdResponse;
 import com.scaneat.back.dto.biz.BizSeatResponse;
 import com.scaneat.back.dto.biz.BizSeatRequest;
 import com.scaneat.back.dto.biz.ImageUploadResponse;
+import com.scaneat.back.entity.AdminRole;
+import com.scaneat.back.entity.AdminUsr;
 import com.scaneat.back.entity.Biz;
 import com.scaneat.back.entity.BizCat;
 import com.scaneat.back.entity.BizHourStd;
@@ -27,6 +35,7 @@ import com.scaneat.back.entity.BizMenu;
 import com.scaneat.back.entity.BizRsvnStd;
 import com.scaneat.back.entity.BizSeat;
 import com.scaneat.back.entity.BizSeatId;
+import com.scaneat.back.repository.AdminUsrRepository;
 import com.scaneat.back.repository.BizCatRepository;
 import com.scaneat.back.repository.BizEmpRepository;
 import com.scaneat.back.repository.BizHourStdRepository;
@@ -35,7 +44,9 @@ import com.scaneat.back.repository.BizRepository;
 import com.scaneat.back.repository.BizRsvnStdRepository;
 import com.scaneat.back.repository.BizSeatRepository;
 import java.io.IOException;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +54,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -52,6 +64,9 @@ import org.springframework.web.multipart.MultipartFile;
 @Transactional(readOnly = true)
 public class BizService {
 
+	private static final String BIZ_CERT_BUCKET = "biz-cert";
+	private static final int BIZ_CERT_SIGNED_URL_TTL_SECONDS = 600;
+
 	private final BizRepository bizRepository;
 	private final SupabaseStorageClient supabaseStorageClient;
 	private final BizCatRepository bizCatRepository;
@@ -60,7 +75,11 @@ public class BizService {
 	private final BizRsvnStdRepository bizRsvnStdRepository;
 	private final BizSeatRepository bizSeatRepository;
 	private final BizEmpRepository bizEmpRepository;
+	private final AdminUsrRepository adminUsrRepository;
+	private final NtsClient ntsClient;
 	private final MenuService menuService;
+	private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+	private final SecureRandom secureRandom = new SecureRandom();
 
 	public BizPageResponse getBizPage(int page, int size) {
 		Page<Biz> result = bizRepository.findAll(PageRequest.of(page, size, Sort.by("bizNm")));
@@ -95,9 +114,134 @@ public class BizService {
 				.indCd(request.indCd())
 				.addr(request.addr())
 				.addrDtl(request.addrDtl())
+				.approvalStatus("APPROVED") // 관리자가 직접 등록하는 사업장은 승인 절차 없이 바로 사용 가능
 				.build();
 		bizRepository.save(biz);
 		return BizResponse.from(biz);
+	}
+
+	// 손님/사업자가 직접 신청하는 셀프 가입 — 국세청 상태조회로 1차 자동 확인만 하고,
+	// 실제 소유권 확인(사업자등록증 대조)은 승인 대기 상태로 남겨 SUPER 관리자가 최종 처리한다.
+	@Transactional
+	public BizSignupResponse signup(BizSignupRequest request) {
+		if (bizRepository.existsById(request.bizRegNo())) {
+			throw new BusinessException(HttpStatus.CONFLICT, "이미 등록된 사업자등록번호입니다: " + request.bizRegNo());
+		}
+		if (adminUsrRepository.existsById(request.adminId())) {
+			throw new BusinessException(HttpStatus.CONFLICT, "이미 사용 중인 아이디입니다: " + request.adminId());
+		}
+
+		String ntsStatus = ntsClient.checkStatus(request.bizRegNo());
+		String signupToken = generateSignupToken();
+		LocalDateTime now = LocalDateTime.now();
+
+		Biz biz = Biz.builder()
+				.bizRegNo(request.bizRegNo())
+				.bizNm(request.bizNm())
+				.repNm(request.repNm())
+				.bizStatus("O")
+				.telNo(request.telNo())
+				.emailAddr(request.emailAddr())
+				.indCd(request.indCd())
+				.addr(request.addr())
+				.addrDtl(request.addrDtl())
+				.approvalStatus("PENDING")
+				.ntsStatus(ntsStatus)
+				.signupToken(signupToken)
+				.build();
+		bizRepository.save(biz);
+
+		// 승인 전까지는 로그인이 안 되도록 비활성 상태(useYn=N)로 계정만 미리 만들어둔다.
+		AdminUsr admin = AdminUsr.builder()
+				.adminId(request.adminId())
+				.passwordHash(passwordEncoder.encode(request.password()))
+				.adminRole(AdminRole.BIZ)
+				.bizRegNo(request.bizRegNo())
+				.adminNm(request.repNm())
+				.useYn("N")
+				.regUsrId("self-signup")
+				.regDt(now)
+				.build();
+		adminUsrRepository.save(admin);
+
+		return new BizSignupResponse(biz.getBizRegNo(), signupToken, ntsStatus);
+	}
+
+	// 가입 직후(아직 로그인 불가) 사업자등록증을 업로드할 때 — signupToken으로 본인 가입건인지 확인한다.
+	@Transactional
+	public void uploadRegistrationCert(String bizRegNo, String signupToken, MultipartFile file) {
+		Biz biz = bizRepository.findById(bizRegNo)
+				.orElseThrow(() -> new ResourceNotFoundException("사업자를 찾을 수 없습니다: " + bizRegNo));
+		if (!"PENDING".equals(biz.getApprovalStatus())
+				|| biz.getSignupToken() == null
+				|| !biz.getSignupToken().equals(signupToken)) {
+			throw new BusinessException(HttpStatus.FORBIDDEN, "가입 절차가 유효하지 않습니다.");
+		}
+		if (file.isEmpty()) {
+			throw new BusinessException(HttpStatus.BAD_REQUEST, "업로드할 파일이 없습니다.");
+		}
+		String contentType = file.getContentType();
+		if (contentType == null || !contentType.startsWith("image/")) {
+			throw new BusinessException(HttpStatus.BAD_REQUEST, "이미지 파일만 업로드할 수 있습니다.");
+		}
+		String path = bizRegNo + "/" + System.currentTimeMillis() + ".jpg";
+		try {
+			supabaseStorageClient.upload(BIZ_CERT_BUCKET, path, file.getBytes(), "image/jpeg");
+		} catch (IOException e) {
+			throw new BusinessException(HttpStatus.BAD_REQUEST, "파일을 읽을 수 없습니다.");
+		}
+		biz.setBizCertPath(path);
+		bizRepository.save(biz);
+	}
+
+	// SUPER 관리자 전용 — 승인 대기 중인 가입건 목록 (사업자등록증은 매번 새로 서명된 URL로 내려줌)
+	public List<BizApprovalResponse> getPendingApprovals(CurrentAdmin requester) {
+		requireSuperForApproval(requester);
+		return bizRepository.findByApprovalStatus("PENDING").stream()
+				.map(biz -> BizApprovalResponse.from(biz, signedCertUrl(biz)))
+				.toList();
+	}
+
+	@Transactional
+	public void approveBiz(String bizRegNo, CurrentAdmin requester) {
+		requireSuperForApproval(requester);
+		Biz biz = bizRepository.findById(bizRegNo)
+				.orElseThrow(() -> new ResourceNotFoundException("사업자를 찾을 수 없습니다: " + bizRegNo));
+		biz.setApprovalStatus("APPROVED");
+		biz.setSignupToken(null);
+		bizRepository.save(biz);
+		adminUsrRepository.findByBizRegNoOrderByRegDtAsc(bizRegNo).forEach(admin -> {
+			admin.setUseYn("Y");
+			adminUsrRepository.save(admin);
+		});
+	}
+
+	@Transactional
+	public void rejectBiz(String bizRegNo, BizRejectRequest request, CurrentAdmin requester) {
+		requireSuperForApproval(requester);
+		Biz biz = bizRepository.findById(bizRegNo)
+				.orElseThrow(() -> new ResourceNotFoundException("사업자를 찾을 수 없습니다: " + bizRegNo));
+		biz.setApprovalStatus("REJECTED");
+		biz.setRejectRsn(request.reason());
+		biz.setSignupToken(null);
+		bizRepository.save(biz);
+	}
+
+	private String signedCertUrl(Biz biz) {
+		if (biz.getBizCertPath() == null) return null;
+		return supabaseStorageClient.createSignedUrl(BIZ_CERT_BUCKET, biz.getBizCertPath(), BIZ_CERT_SIGNED_URL_TTL_SECONDS);
+	}
+
+	private void requireSuperForApproval(CurrentAdmin requester) {
+		if (!requester.isSuper()) {
+			throw new BusinessException(HttpStatus.FORBIDDEN, "슈퍼관리자만 처리할 수 있습니다.");
+		}
+	}
+
+	private String generateSignupToken() {
+		byte[] randomBytes = new byte[24];
+		secureRandom.nextBytes(randomBytes);
+		return Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
 	}
 
 	@Transactional
