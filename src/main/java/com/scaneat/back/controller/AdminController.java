@@ -1,6 +1,7 @@
 package com.scaneat.back.controller;
 
 import com.scaneat.back.common.ApiResponse;
+import com.scaneat.back.common.security.CurrentAdmin;
 import com.scaneat.back.dto.admin.AdminLoginRequest;
 import com.scaneat.back.dto.admin.AdminLoginResponse;
 import com.scaneat.back.dto.admin.AdminUsrResponse;
@@ -9,6 +10,7 @@ import com.scaneat.back.dto.common.PasswordChangeRequest;
 import com.scaneat.back.dto.common.PasswordVerifyRequest;
 import com.scaneat.back.dto.common.PasswordVerifyResponse;
 import com.scaneat.back.service.AdminService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -44,24 +46,33 @@ public class AdminController {
 	}
 
 	@PutMapping("/users/{adminId}/password")
-	public ApiResponse<Void> changePassword(@PathVariable String adminId, @Valid @RequestBody PasswordChangeRequest request) {
-		adminService.changePassword(adminId, request);
+	public ApiResponse<Void> changePassword(
+			@PathVariable String adminId, @Valid @RequestBody PasswordChangeRequest request, HttpServletRequest httpRequest) {
+		adminService.changePassword(adminId, request, currentAdmin(httpRequest));
 		return ApiResponse.ok(null);
 	}
 
 	@PutMapping("/employees/{empId}/password")
-	public ApiResponse<Void> changeEmployeePassword(@PathVariable String empId, @Valid @RequestBody PasswordChangeRequest request) {
-		adminService.changeEmployeePassword(empId, request);
+	public ApiResponse<Void> changeEmployeePassword(
+			@PathVariable String empId, @Valid @RequestBody PasswordChangeRequest request, HttpServletRequest httpRequest) {
+		adminService.changeEmployeePassword(empId, request, currentAdmin(httpRequest));
 		return ApiResponse.ok(null);
 	}
 
 	@PostMapping("/users/{adminId}/verify-password")
-	public ApiResponse<PasswordVerifyResponse> verifyPassword(@PathVariable String adminId, @Valid @RequestBody PasswordVerifyRequest request) {
-		return ApiResponse.ok(adminService.verifyPassword(adminId, request));
+	public ApiResponse<PasswordVerifyResponse> verifyPassword(
+			@PathVariable String adminId, @Valid @RequestBody PasswordVerifyRequest request, HttpServletRequest httpRequest) {
+		return ApiResponse.ok(adminService.verifyPassword(adminId, request, currentAdmin(httpRequest)));
 	}
 
 	@PostMapping("/employees/{empId}/verify-password")
-	public ApiResponse<PasswordVerifyResponse> verifyEmployeePassword(@PathVariable String empId, @Valid @RequestBody PasswordVerifyRequest request) {
-		return ApiResponse.ok(adminService.verifyEmployeePassword(empId, request));
+	public ApiResponse<PasswordVerifyResponse> verifyEmployeePassword(
+			@PathVariable String empId, @Valid @RequestBody PasswordVerifyRequest request, HttpServletRequest httpRequest) {
+		return ApiResponse.ok(adminService.verifyEmployeePassword(empId, request, currentAdmin(httpRequest)));
+	}
+
+	// AdminAuthInterceptor가 세션 토큰을 검증하며 요청 속성에 담아둔 인증된 관리자 정보를 꺼낸다.
+	private CurrentAdmin currentAdmin(HttpServletRequest request) {
+		return (CurrentAdmin) request.getAttribute(CurrentAdmin.REQUEST_ATTR);
 	}
 }

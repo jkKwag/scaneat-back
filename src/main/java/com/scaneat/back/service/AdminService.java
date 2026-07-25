@@ -2,6 +2,7 @@ package com.scaneat.back.service;
 
 import com.scaneat.back.common.exception.BusinessException;
 import com.scaneat.back.common.exception.ResourceNotFoundException;
+import com.scaneat.back.common.security.CurrentAdmin;
 import com.scaneat.back.dto.admin.AdminLoginRequest;
 import com.scaneat.back.dto.admin.AdminLoginResponse;
 import com.scaneat.back.dto.admin.AdminUsrResponse;
@@ -96,8 +97,8 @@ public class AdminService {
 	}
 
 	@Transactional
-	public void changePassword(String adminId, PasswordChangeRequest request) {
-		checkSelfOrSuper(adminId, request.requesterId(), request.requesterRole());
+	public void changePassword(String adminId, PasswordChangeRequest request, CurrentAdmin requester) {
+		checkSelfOrSuper(adminId, requester);
 		AdminUsr admin = adminUsrRepository.findById(adminId)
 				.orElseThrow(() -> new ResourceNotFoundException("관리자 계정을 찾을 수 없습니다: " + adminId));
 		if (!passwordEncoder.matches(request.currentPassword(), admin.getPasswordHash())) {
@@ -111,8 +112,8 @@ public class AdminService {
 	}
 
 	@Transactional
-	public void changeEmployeePassword(String empId, PasswordChangeRequest request) {
-		checkSelfOrSuper(empId, request.requesterId(), request.requesterRole());
+	public void changeEmployeePassword(String empId, PasswordChangeRequest request, CurrentAdmin requester) {
+		checkSelfOrSuper(empId, requester);
 		BizEmp emp = bizEmpRepository.findById(empId)
 				.orElseThrow(() -> new ResourceNotFoundException("직원 계정을 찾을 수 없습니다: " + empId));
 		if (!passwordEncoder.matches(request.currentPassword(), emp.getPasswordHash())) {
@@ -126,25 +127,24 @@ public class AdminService {
 	}
 
 	// 비밀번호 변경 전, 입력한 현재 비밀번호가 맞는지만 확인한다 (실제 변경은 하지 않음).
-	public PasswordVerifyResponse verifyPassword(String adminId, PasswordVerifyRequest request) {
-		checkSelfOrSuper(adminId, request.requesterId(), request.requesterRole());
+	public PasswordVerifyResponse verifyPassword(String adminId, PasswordVerifyRequest request, CurrentAdmin requester) {
+		checkSelfOrSuper(adminId, requester);
 		AdminUsr admin = adminUsrRepository.findById(adminId)
 				.orElseThrow(() -> new ResourceNotFoundException("관리자 계정을 찾을 수 없습니다: " + adminId));
 		return new PasswordVerifyResponse(passwordEncoder.matches(request.password(), admin.getPasswordHash()));
 	}
 
-	public PasswordVerifyResponse verifyEmployeePassword(String empId, PasswordVerifyRequest request) {
-		checkSelfOrSuper(empId, request.requesterId(), request.requesterRole());
+	public PasswordVerifyResponse verifyEmployeePassword(String empId, PasswordVerifyRequest request, CurrentAdmin requester) {
+		checkSelfOrSuper(empId, requester);
 		BizEmp emp = bizEmpRepository.findById(empId)
 				.orElseThrow(() -> new ResourceNotFoundException("직원 계정을 찾을 수 없습니다: " + empId));
 		return new PasswordVerifyResponse(passwordEncoder.matches(request.password(), emp.getPasswordHash()));
 	}
 
 	// 슈퍼관리자가 아니면 본인 계정의 비밀번호만 변경/확인할 수 있다.
-	private void checkSelfOrSuper(String targetId, String requesterId, String requesterRole) {
-		boolean isSuper = "SUPER".equals(requesterRole);
-		boolean isSelf = requesterId.equals(targetId);
-		if (!isSuper && !isSelf) {
+	// requester는 요청 바디가 아니라 AdminAuthInterceptor가 세션 토큰으로 확인한 신원이라 위조할 수 없다.
+	private void checkSelfOrSuper(String targetId, CurrentAdmin requester) {
+		if (!requester.isSuper() && !requester.adminId().equals(targetId)) {
 			throw new BusinessException(HttpStatus.FORBIDDEN, FORBIDDEN_MESSAGE);
 		}
 	}
