@@ -42,6 +42,10 @@ supabase:
   service-role-key: ${SUPABASE_SERVICE_ROLE_KEY}
   base-url: https://zhtqkjorhhqnnhgsddmn.supabase.co
 
+nts:
+  service-key: ${NTS_SERVICE_KEY}
+  base-url: https://api.odcloud.kr/api/nts-businessman/v1
+
 logging:
   level:
     com.scaneat.back: INFO
