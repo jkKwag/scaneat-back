@@ -1,11 +1,13 @@
 package com.scaneat.back.controller;
 
 import com.scaneat.back.common.ApiResponse;
+import com.scaneat.back.common.security.CurrentAdmin;
 import com.scaneat.back.dto.menu.MenuOptionGroupRequest;
 import com.scaneat.back.dto.menu.MenuOptionGroupResponse;
 import com.scaneat.back.dto.menu.MenuOptionRequest;
 import com.scaneat.back.dto.menu.MenuOptionResponse;
 import com.scaneat.back.service.MenuService;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -30,26 +32,33 @@ public class MenuController {
 
 	@PostMapping("/{menuCd}/option-groups")
 	public ApiResponse<MenuOptionGroupResponse> createOptionGroup(
-			@PathVariable String menuCd, @RequestBody MenuOptionGroupRequest request) {
-		return ApiResponse.ok(menuService.createOptionGroup(menuCd, request));
+			@PathVariable String menuCd, @RequestBody MenuOptionGroupRequest request, HttpServletRequest httpRequest) {
+		return ApiResponse.ok(menuService.createOptionGroup(menuCd, request, currentAdmin(httpRequest)));
 	}
 
 	@PostMapping("/{menuCd}/option-groups/{optGrpCd}/options")
 	public ApiResponse<MenuOptionResponse> addOption(
-			@PathVariable String menuCd, @PathVariable String optGrpCd, @RequestBody MenuOptionRequest request) {
-		return ApiResponse.ok(menuService.addOption(menuCd, optGrpCd, request));
+			@PathVariable String menuCd, @PathVariable String optGrpCd, @RequestBody MenuOptionRequest request,
+			HttpServletRequest httpRequest) {
+		return ApiResponse.ok(menuService.addOption(menuCd, optGrpCd, request, currentAdmin(httpRequest)));
 	}
 
 	@DeleteMapping("/{menuCd}/option-groups/{optGrpCd}/options/{optCd}")
 	public ApiResponse<Void> deleteOption(
-			@PathVariable String menuCd, @PathVariable String optGrpCd, @PathVariable String optCd) {
-		menuService.deleteOption(menuCd, optGrpCd, optCd);
+			@PathVariable String menuCd, @PathVariable String optGrpCd, @PathVariable String optCd,
+			HttpServletRequest httpRequest) {
+		menuService.deleteOption(menuCd, optGrpCd, optCd, currentAdmin(httpRequest));
 		return ApiResponse.ok(null);
 	}
 
 	@DeleteMapping("/{menuCd}/option-groups/{optGrpCd}")
-	public ApiResponse<Void> deleteOptionGroup(@PathVariable String menuCd, @PathVariable String optGrpCd) {
-		menuService.deleteOptionGroup(menuCd, optGrpCd);
+	public ApiResponse<Void> deleteOptionGroup(
+			@PathVariable String menuCd, @PathVariable String optGrpCd, HttpServletRequest httpRequest) {
+		menuService.deleteOptionGroup(menuCd, optGrpCd, currentAdmin(httpRequest));
 		return ApiResponse.ok(null);
+	}
+
+	private CurrentAdmin currentAdmin(HttpServletRequest request) {
+		return (CurrentAdmin) request.getAttribute(CurrentAdmin.REQUEST_ATTR);
 	}
 }
