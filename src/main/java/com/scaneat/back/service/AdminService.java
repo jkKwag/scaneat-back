@@ -21,6 +21,8 @@ import com.scaneat.back.repository.AdminSessionRepository;
 import com.scaneat.back.repository.AdminUsrRepository;
 import com.scaneat.back.repository.BizEmpRepository;
 import com.scaneat.back.repository.SysMenuRepository;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
@@ -47,6 +49,7 @@ public class AdminService {
 	private static final String TOTP_REQUIRED_MESSAGE = "TOTP_REQUIRED";
 	private static final String TOTP_INVALID_MESSAGE = "인증 코드가 올바르지 않습니다.";
 	private static final String SUPER_ONLY_MESSAGE = "슈퍼관리자만 설정할 수 있습니다.";
+	private static final String TOTP_ISSUER = "Scaneat";
 	private static final long SESSION_TTL_HOURS = 12;
 
 	private final AdminUsrRepository adminUsrRepository;
@@ -169,7 +172,15 @@ public class AdminService {
 	// 실제로 그 키로 코드를 만들어낼 수 있음을 confirmTotp에서 증명해야 저장된다.
 	public TotpSetupResponse setupTotp(CurrentAdmin requester) {
 		requireSuper(requester);
-		return new TotpSetupResponse(TotpUtil.generateSecret());
+		String secret = TotpUtil.generateSecret();
+		return new TotpSetupResponse(secret, buildOtpauthUri(requester.adminId(), secret));
+	}
+
+	// 구글 OTP 등 인증 앱이 QR로 읽을 수 있는 표준 otpauth:// URI를 만든다.
+	private String buildOtpauthUri(String adminId, String secret) {
+		String issuer = URLEncoder.encode(TOTP_ISSUER, StandardCharsets.UTF_8);
+		String label = URLEncoder.encode(TOTP_ISSUER + ":" + adminId, StandardCharsets.UTF_8).replace("+", "%20");
+		return "otpauth://totp/" + label + "?secret=" + secret + "&issuer=" + issuer + "&algorithm=SHA1&digits=6&period=30";
 	}
 
 	@Transactional
