@@ -1,6 +1,7 @@
 package com.scaneat.back.service;
 
 import com.scaneat.back.client.NtsClient;
+import com.scaneat.back.client.SesClient;
 import com.scaneat.back.client.SupabaseStorageClient;
 import com.scaneat.back.common.exception.BusinessException;
 import com.scaneat.back.common.exception.ResourceNotFoundException;
@@ -13,6 +14,8 @@ import com.scaneat.back.dto.biz.BizCreateRequest;
 import com.scaneat.back.dto.biz.BizRejectRequest;
 import com.scaneat.back.dto.biz.BizSignupRequest;
 import com.scaneat.back.dto.biz.BizSignupResponse;
+import com.scaneat.back.dto.biz.EmailCodeSendRequest;
+import com.scaneat.back.dto.biz.EmailCodeVerifyRequest;
 import com.scaneat.back.dto.biz.BizUpdateRequest;
 import com.scaneat.back.dto.biz.BizHourRequest;
 import com.scaneat.back.dto.biz.BizHourResponse;
@@ -35,6 +38,7 @@ import com.scaneat.back.entity.BizMenu;
 import com.scaneat.back.entity.BizRsvnStd;
 import com.scaneat.back.entity.BizSeat;
 import com.scaneat.back.entity.BizSeatId;
+import com.scaneat.back.entity.EmailVerifyCode;
 import com.scaneat.back.repository.AdminUsrRepository;
 import com.scaneat.back.repository.BizCatRepository;
 import com.scaneat.back.repository.BizEmpRepository;
@@ -43,6 +47,7 @@ import com.scaneat.back.repository.BizMenuRepository;
 import com.scaneat.back.repository.BizRepository;
 import com.scaneat.back.repository.BizRsvnStdRepository;
 import com.scaneat.back.repository.BizSeatRepository;
+import com.scaneat.back.repository.EmailVerifyCodeRepository;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
@@ -66,9 +71,12 @@ public class BizService {
 
 	private static final String BIZ_CERT_BUCKET = "biz-cert";
 	private static final int BIZ_CERT_SIGNED_URL_TTL_SECONDS = 600;
+	private static final int EMAIL_CODE_TTL_MINUTES = 5;
 
 	private final BizRepository bizRepository;
 	private final SupabaseStorageClient supabaseStorageClient;
+	private final SesClient sesClient;
+	private final EmailVerifyCodeRepository emailVerifyCodeRepository;
 	private final BizCatRepository bizCatRepository;
 	private final BizMenuRepository bizMenuRepository;
 	private final BizHourStdRepository bizHourStdRepository;
@@ -120,6 +128,40 @@ public class BizService {
 		return BizResponse.from(biz);
 	}
 
+	// 가입 폼에 이메일을 입력한 시점 — 아직 계정이 없으므로 별도 테이블에 코드만 임시 저장한다.
+	@Transactional
+	public void sendEmailCode(EmailCodeSendRequest request) {
+		String email = request.email().trim().toLowerCase();
+		if (adminUsrRepository.existsById(email)) {
+			throw new BusinessException(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다: " + email);
+		}
+		String code = String.format("%06d", secureRandom.nextInt(1_000_000));
+		LocalDateTime now = LocalDateTime.now();
+		emailVerifyCodeRepository.save(EmailVerifyCode.builder()
+				.email(email)
+				.code(code)
+				.expiresDt(now.plusMinutes(EMAIL_CODE_TTL_MINUTES))
+				.regDt(now)
+				.verifiedYn("N")
+				.build());
+		sesClient.sendVerificationCode(email, code);
+	}
+
+	@Transactional
+	public void verifyEmailCode(EmailCodeVerifyRequest request) {
+		String email = request.email().trim().toLowerCase();
+		EmailVerifyCode verify = emailVerifyCodeRepository.findById(email)
+				.orElseThrow(() -> new BusinessException(HttpStatus.BAD_REQUEST, "인증코드를 먼저 발급받아주세요."));
+		if (verify.getExpiresDt().isBefore(LocalDateTime.now())) {
+			throw new BusinessException(HttpStatus.BAD_REQUEST, "인증코드가 만료되었습니다. 다시 발급받아주세요.");
+		}
+		if (!verify.getCode().equals(request.code().trim())) {
+			throw new BusinessException(HttpStatus.BAD_REQUEST, "인증코드가 올바르지 않습니다.");
+		}
+		verify.setVerifiedYn("Y");
+		emailVerifyCodeRepository.save(verify);
+	}
+
 	// 손님/사업자가 직접 신청하는 셀프 가입 — 국세청 상태조회로 1차 자동 확인만 하고,
 	// 실제 소유권 확인(사업자등록증 대조)은 승인 대기 상태로 남겨 SUPER 관리자가 최종 처리한다.
 	@Transactional
@@ -131,6 +173,10 @@ public class BizService {
 		String normalizedAdminId = request.adminId().trim().toLowerCase();
 		if (adminUsrRepository.existsById(normalizedAdminId)) {
 			throw new BusinessException(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다: " + normalizedAdminId);
+		}
+		EmailVerifyCode verify = emailVerifyCodeRepository.findById(normalizedAdminId).orElse(null);
+		if (verify == null || !"Y".equals(verify.getVerifiedYn())) {
+			throw new BusinessException(HttpStatus.BAD_REQUEST, "이메일 인증을 먼저 완료해주세요.");
 		}
 
 		String ntsStatus = ntsClient.checkStatus(request.bizRegNo());
@@ -166,6 +212,7 @@ public class BizService {
 				.regDt(now)
 				.build();
 		adminUsrRepository.save(admin);
+		emailVerifyCodeRepository.deleteById(normalizedAdminId);
 
 		return new BizSignupResponse(biz.getBizRegNo(), signupToken, ntsStatus);
 	}
