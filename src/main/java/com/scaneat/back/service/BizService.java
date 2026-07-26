@@ -1,5 +1,6 @@
 package com.scaneat.back.service;
 
+import com.scaneat.back.client.GeminiClient;
 import com.scaneat.back.client.NtsClient;
 import com.scaneat.back.client.NtsStatusResult;
 import com.scaneat.back.client.SesClient;
@@ -10,6 +11,8 @@ import com.scaneat.back.common.security.CurrentAdmin;
 import com.scaneat.back.dto.biz.BizApprovalResponse;
 import com.scaneat.back.dto.biz.BizCatRequest;
 import com.scaneat.back.dto.biz.BizCatResponse;
+import com.scaneat.back.dto.biz.BizCertExtractResult;
+import com.scaneat.back.dto.biz.BizCertUploadResponse;
 import com.scaneat.back.dto.biz.BizEmpResponse;
 import com.scaneat.back.dto.biz.BizCreateRequest;
 import com.scaneat.back.dto.biz.BizRejectRequest;
@@ -59,6 +62,8 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
@@ -72,6 +77,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Transactional(readOnly = true)
 public class BizService {
 
+	private static final Logger log = LoggerFactory.getLogger(BizService.class);
 	private static final String BIZ_CERT_BUCKET = "biz-cert";
 	private static final int BIZ_CERT_SIGNED_URL_TTL_SECONDS = 600;
 	private static final int EMAIL_CODE_TTL_MINUTES = 5;
@@ -90,6 +96,7 @@ public class BizService {
 	private final BizEmpRepository bizEmpRepository;
 	private final AdminUsrRepository adminUsrRepository;
 	private final NtsClient ntsClient;
+	private final GeminiClient geminiClient;
 	private final MenuService menuService;
 	private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 	private final SecureRandom secureRandom = new SecureRandom();
@@ -236,7 +243,7 @@ public class BizService {
 	// PROV_ADMIN(또는 SUPER)이 로그인 후 본인 화면에서 사업자등록증을 업로드/재업로드한다 —
 	// 인증/소유권 확인은 AdminAuthInterceptor가 이미 처리하므로 여기서 별도 토큰 확인은 불필요.
 	@Transactional
-	public void uploadRegistrationCert(String bizRegNo, MultipartFile file) {
+	public BizCertUploadResponse uploadRegistrationCert(String bizRegNo, MultipartFile file) {
 		Biz biz = bizRepository.findById(bizRegNo)
 				.orElseThrow(() -> new ResourceNotFoundException("사업자를 찾을 수 없습니다: " + bizRegNo));
 		if (file.isEmpty()) {
@@ -246,14 +253,25 @@ public class BizService {
 		if (contentType == null || !contentType.startsWith("image/")) {
 			throw new BusinessException(HttpStatus.BAD_REQUEST, "이미지 파일만 업로드할 수 있습니다.");
 		}
-		String path = bizRegNo + "/" + System.currentTimeMillis() + ".jpg";
+		byte[] bytes;
 		try {
-			supabaseStorageClient.upload(BIZ_CERT_BUCKET, path, file.getBytes(), "image/jpeg");
+			bytes = file.getBytes();
 		} catch (IOException e) {
 			throw new BusinessException(HttpStatus.BAD_REQUEST, "파일을 읽을 수 없습니다.");
 		}
+		String path = bizRegNo + "/" + System.currentTimeMillis() + ".jpg";
+		supabaseStorageClient.upload(BIZ_CERT_BUCKET, path, bytes, "image/jpeg");
 		biz.setBizCertPath(path);
 		bizRepository.save(biz);
+
+		// 인식은 어디까지나 입력을 도와주는 보조 기능 — 실패해도 업로드 자체는 이미 끝난 상태이므로 막지 않는다.
+		BizCertExtractResult extracted = null;
+		try {
+			extracted = geminiClient.extractBizCertInfo(bytes, contentType);
+		} catch (Exception e) {
+			log.warn("사업자등록증 정보 인식 실패: bizRegNo={}", bizRegNo, e);
+		}
+		return new BizCertUploadResponse(signedCertUrl(biz), extracted);
 	}
 
 	// 본인(또는 SUPER)이 업로드된 사업자등록증을 확인할 때 — 매번 새로 서명된 URL을 내려준다.

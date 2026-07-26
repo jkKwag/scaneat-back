@@ -5,6 +5,7 @@ import com.scaneat.back.common.security.CurrentAdmin;
 import com.scaneat.back.dto.biz.BizApprovalResponse;
 import com.scaneat.back.dto.biz.BizCatRequest;
 import com.scaneat.back.dto.biz.BizCatResponse;
+import com.scaneat.back.dto.biz.BizCertUploadResponse;
 import com.scaneat.back.dto.biz.BizEmpResponse;
 import com.scaneat.back.dto.biz.BizCreateRequest;
 import com.scaneat.back.dto.biz.BizRejectRequest;
@@ -86,9 +87,8 @@ public class BizController {
 
 	// 로그인 후(본인 또는 SUPER) 사업자등록증 업로드/재업로드 — 소유권 확인은 AdminAuthInterceptor가 처리
 	@PostMapping(value = "/{bizno}/registration-cert", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ApiResponse<Void> uploadRegistrationCert(@PathVariable String bizno, @RequestParam("file") MultipartFile file) {
-		bizService.uploadRegistrationCert(bizno, file);
-		return ApiResponse.ok(null);
+	public ApiResponse<BizCertUploadResponse> uploadRegistrationCert(@PathVariable String bizno, @RequestParam("file") MultipartFile file) {
+		return ApiResponse.ok(bizService.uploadRegistrationCert(bizno, file));
 	}
 
 	@GetMapping("/{bizno}/registration-cert")

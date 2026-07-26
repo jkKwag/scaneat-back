@@ -1,6 +1,9 @@
 package com.scaneat.back.client;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scaneat.back.common.exception.BusinessException;
+import com.scaneat.back.dto.biz.BizCertExtractResult;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,7 +15,27 @@ import org.springframework.web.client.RestClientResponseException;
 @Component
 public class GeminiClient {
 
+	private static final String BIZ_CERT_EXTRACT_PROMPT = """
+			이 이미지는 한국 사업자등록증입니다. 다음 항목을 읽어서 JSON으로만 답하세요.
+			- bizNm: 상호(법인명)
+			- repNm: 대표자 성명
+			- addr: 사업장 소재지(전체 주소)
+			- bizRegNo: 사업자등록번호(숫자만, 하이픈 제외)
+			읽을 수 없거나 이미지에 없는 항목은 null로 답하세요.
+			""";
+
+	private static final Map<String, Object> BIZ_CERT_EXTRACT_SCHEMA = Map.of(
+			"type", "OBJECT",
+			"properties", Map.of(
+					"bizNm", Map.of("type", "STRING", "nullable", true),
+					"repNm", Map.of("type", "STRING", "nullable", true),
+					"addr", Map.of("type", "STRING", "nullable", true),
+					"bizRegNo", Map.of("type", "STRING", "nullable", true)
+			)
+	);
+
 	private final RestClient geminiRestClient;
+	private final ObjectMapper objectMapper;
 	private final String apiKey;
 	private final String model;
 
@@ -86,9 +109,11 @@ public class GeminiClient {
 	);
 
 	public GeminiClient(RestClient geminiRestClient,
+			ObjectMapper objectMapper,
 			@Value("${gemini.api-key}") String apiKey,
 			@Value("${gemini.model}") String model) {
 		this.geminiRestClient = geminiRestClient;
+		this.objectMapper = objectMapper;
 		this.apiKey = apiKey;
 		this.model = model;
 	}
@@ -141,5 +166,58 @@ public class GeminiClient {
 		}
 
 		return new GeminiResult(text, functionCall);
+	}
+
+	// 사업자등록증 이미지를 Gemini 멀티모달로 읽어서 사업장 기본정보를 추출한다.
+	@SuppressWarnings("unchecked")
+	public BizCertExtractResult extractBizCertInfo(byte[] imageBytes, String mimeType) {
+		String base64Image = Base64.getEncoder().encodeToString(imageBytes);
+		Map<String, Object> requestBody = Map.of(
+				"contents", List.of(
+						Map.of("role", "user", "parts", List.of(
+								Map.of("text", BIZ_CERT_EXTRACT_PROMPT),
+								Map.of("inlineData", Map.of("mimeType", mimeType, "data", base64Image))
+						))
+				),
+				"generationConfig", Map.of(
+						"responseMimeType", "application/json",
+						"responseSchema", BIZ_CERT_EXTRACT_SCHEMA
+				)
+		);
+
+		Map<String, Object> response;
+		try {
+			response = geminiRestClient.post()
+					.uri("/models/{model}:generateContent?key={apiKey}", model, apiKey)
+					.body(requestBody)
+					.retrieve()
+					.body(Map.class);
+		} catch (RestClientResponseException ex) {
+			throw new BusinessException(HttpStatus.BAD_GATEWAY,
+					"사업자등록증 인식에 실패했습니다: " + ex.getResponseBodyAsString());
+		}
+
+		if (response == null) {
+			throw new BusinessException(HttpStatus.BAD_GATEWAY, "사업자등록증 인식 응답이 비어있습니다.");
+		}
+
+		List<Map<String, Object>> candidates = (List<Map<String, Object>>) response.get("candidates");
+		if (candidates == null || candidates.isEmpty()) {
+			throw new BusinessException(HttpStatus.BAD_GATEWAY, "사업자등록증 인식 결과가 없습니다.");
+		}
+
+		Map<String, Object> content = (Map<String, Object>) candidates.get(0).get("content");
+		List<Map<String, Object>> parts = (List<Map<String, Object>>) content.get("parts");
+		String json = parts.stream()
+				.map(part -> (String) part.get("text"))
+				.filter(text -> text != null)
+				.findFirst()
+				.orElseThrow(() -> new BusinessException(HttpStatus.BAD_GATEWAY, "사업자등록증 인식 결과가 비어있습니다."));
+
+		try {
+			return objectMapper.readValue(json, BizCertExtractResult.class);
+		} catch (Exception e) {
+			throw new BusinessException(HttpStatus.BAD_GATEWAY, "사업자등록증 인식 결과를 해석할 수 없습니다.");
+		}
 	}
 }
