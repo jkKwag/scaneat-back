@@ -207,14 +207,15 @@ public class BizService {
 				.build();
 		bizRepository.save(biz);
 
-		// 승인 전까지는 로그인이 안 되도록 비활성 상태(useYn=N)로 계정만 미리 만들어둔다.
+		// 승인 전에도 로그인은 되지만, PROV_ADMIN 역할이라 tb_sys_menu_role로 제한된 메뉴만 보인다.
+		// 승인되면 approveBiz()에서 BIZ로 바뀐다.
 		AdminUsr admin = AdminUsr.builder()
 				.adminId(normalizedAdminId)
 				.passwordHash(passwordEncoder.encode(request.password()))
-				.adminRole(AdminRole.BIZ)
+				.adminRole(AdminRole.PROV_ADMIN)
 				.bizRegNo(request.bizRegNo())
 				.adminNm(request.repNm())
-				.useYn("N")
+				.useYn("Y")
 				.regUsrId("self-signup")
 				.regDt(now)
 				.build();
@@ -281,6 +282,9 @@ public class BizService {
 		bizRepository.save(biz);
 		adminUsrRepository.findByBizRegNoOrderByRegDtAsc(bizRegNo).forEach(admin -> {
 			admin.setUseYn("Y");
+			if (admin.getAdminRole() == AdminRole.PROV_ADMIN) {
+				admin.setAdminRole(AdminRole.BIZ);
+			}
 			adminUsrRepository.save(admin);
 		});
 	}
