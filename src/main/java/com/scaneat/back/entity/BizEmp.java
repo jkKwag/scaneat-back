@@ -22,8 +22,9 @@ import org.hibernate.annotations.ColumnDefault;
 @Builder
 public class BizEmp {
 
+	// admin_id와 동일하게 이메일 주소를 그대로 저장한다 (로그인 화면을 admin_usr와 공유하므로 통일).
 	@Id
-	@Column(name = "emp_id", length = 50)
+	@Column(name = "emp_id", length = 255)
 	private String empId;
 
 	@Column(name = "password_hash", length = 200, nullable = false)

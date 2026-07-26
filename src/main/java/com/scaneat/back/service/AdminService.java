@@ -43,7 +43,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class AdminService {
 
-	private static final String INVALID_CREDENTIALS_MESSAGE = "아이디 또는 비밀번호가 올바르지 않습니다.";
+	private static final String INVALID_CREDENTIALS_MESSAGE = "이메일 또는 비밀번호가 올바르지 않습니다.";
 	private static final String FORBIDDEN_MESSAGE = "본인 계정의 비밀번호만 변경할 수 있습니다.";
 	private static final String WRONG_CURRENT_PASSWORD_MESSAGE = "현재 비밀번호가 일치하지 않습니다.";
 	private static final String SAME_PASSWORD_MESSAGE = "현재 비밀번호와 다른 비밀번호로 설정해주세요.";
@@ -88,7 +88,7 @@ public class AdminService {
 
 		checkPendingBizSignup(normalizedAdminId, request.password());
 
-		BizEmp emp = bizEmpRepository.findByEmpIdAndUseYn(request.adminId(), "Y")
+		BizEmp emp = bizEmpRepository.findByEmpIdAndUseYn(normalizedAdminId, "Y")
 				.orElseThrow(() -> new BusinessException(HttpStatus.UNAUTHORIZED, INVALID_CREDENTIALS_MESSAGE));
 		if (!passwordEncoder.matches(request.password(), emp.getPasswordHash())) {
 			throw new BusinessException(HttpStatus.UNAUTHORIZED, INVALID_CREDENTIALS_MESSAGE);
