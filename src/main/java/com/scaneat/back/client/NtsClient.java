@@ -16,6 +16,8 @@ import org.springframework.web.client.RestClientResponseException;
 public class NtsClient {
 
 	private static final Logger log = LoggerFactory.getLogger(NtsClient.class);
+	// 정상 조회(성공/미확인)와 구분되는 값 — API 서버 자체 장애로 확인을 못 한 경우에 반환한다.
+	private static final String API_ERROR_STATUS = "국세청 API 서버 에러로 인증하지 못하였습니다.";
 
 	private final RestClient ntsRestClient;
 	private final String serviceKey;
@@ -52,10 +54,10 @@ public class NtsClient {
 			return bStt;
 		} catch (RestClientResponseException ex) {
 			log.error("NTS 상태조회 실패: status={}, body={}", ex.getStatusCode(), ex.getResponseBodyAsString());
-			return null;
+			return API_ERROR_STATUS;
 		} catch (RuntimeException ex) {
 			log.error("NTS 상태조회 중 오류", ex);
-			return null;
+			return API_ERROR_STATUS;
 		}
 	}
 }
