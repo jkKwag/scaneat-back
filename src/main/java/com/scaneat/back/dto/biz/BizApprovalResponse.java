@@ -16,7 +16,7 @@ public record BizApprovalResponse(
 		String rejectRsn,
 		String bizCertUrl
 ) {
-	public static BizApprovalResponse from(Biz biz, String bizCertUrl) {
+	public static BizApprovalResponse from(Biz biz, String bizCertUrl, String ntsStatusDisplay) {
 		return new BizApprovalResponse(
 				biz.getBizRegNo(),
 				biz.getBizNm(),
@@ -26,7 +26,7 @@ public record BizApprovalResponse(
 				biz.getEmailAddr(),
 				biz.getAddr(),
 				biz.getAddrDtl(),
-				biz.getNtsStatus(),
+				ntsStatusDisplay,
 				biz.getApprovalStatus(),
 				biz.getRejectRsn(),
 				bizCertUrl
