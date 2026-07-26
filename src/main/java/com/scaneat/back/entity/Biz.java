@@ -71,9 +71,4 @@ public class Biz {
 
 	@Column(name = "reject_rsn", length = 500)
 	private String rejectRsn;
-
-	// 가입 직후 사업자등록증을 업로드할 때만 쓰는 1회성 토큰 — 이 시점엔 아직 로그인이
-	// 안 되므로(승인 전) 세션 토큰 대신 이걸로 본인 가입건임을 확인한다. 승인/거부 후 null로 비운다.
-	@Column(name = "signup_token", length = 64)
-	private String signupToken;
 }
