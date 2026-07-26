@@ -57,8 +57,9 @@ public class Biz {
 	@Column(name = "approval_status", length = 20)
 	private String approvalStatus;
 
-	// 국세청 상태조회 API 결과(예: "계속사업자", "휴업자", "폐업자") — 조회 실패/미확인이면 null
-	@Column(name = "nts_status", length = 20)
+	// 국세청 상태조회 API 결과(예: "계속사업자", "휴업자", "폐업자") — 조회 실패/미확인이면 null.
+	// API 서버 오류 시엔 안내 문구를 그대로 담아서(길 수 있음) 넉넉하게 잡는다.
+	@Column(name = "nts_status", length = 200)
 	private String ntsStatus;
 
 	// Supabase Storage 안의 경로(공개 URL 아님 — 비공개 버킷이라 매번 서명된 URL로만 열람)
