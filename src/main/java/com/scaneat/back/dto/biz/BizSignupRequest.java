@@ -10,6 +10,8 @@ public record BizSignupRequest(
 		@NotBlank(message = "상호명을 입력해주세요.") String bizNm,
 		// 대표자명은 나중에 사업자등록증 이미지 인식으로 채울 예정이라 가입 시점엔 받지 않는다.
 		String repNm,
+		@NotBlank(message = "전화번호를 입력해주세요.")
+		@Pattern(regexp = "^[0-9]{9,11}$", message = "전화번호 형식이 올바르지 않습니다.")
 		String telNo,
 		@NotBlank(message = "휴대폰번호를 입력해주세요.")
 		@Pattern(regexp = "^01[0-9]{8,9}$", message = "휴대폰번호 형식이 올바르지 않습니다.")
