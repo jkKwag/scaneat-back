@@ -66,7 +66,9 @@ public class AdminService {
 	// 두 테이블은 완전히 분리된 채로 두고, 로그인 시도만 순서대로 두 곳을 확인한다.
 	@Transactional
 	public AdminLoginResponse login(AdminLoginRequest request) {
-		Optional<AdminUsr> admin = adminUsrRepository.findByAdminIdAndUseYn(request.adminId(), "Y");
+		// admin_id는 이메일이라 대소문자를 구분하지 않는다 — 가입 시 소문자로 저장하므로 조회도 소문자로 맞춘다.
+		String normalizedAdminId = request.adminId() == null ? null : request.adminId().trim().toLowerCase();
+		Optional<AdminUsr> admin = adminUsrRepository.findByAdminIdAndUseYn(normalizedAdminId, "Y");
 		if (admin.isPresent()) {
 			if (!passwordEncoder.matches(request.password(), admin.get().getPasswordHash())) {
 				throw new BusinessException(HttpStatus.UNAUTHORIZED, INVALID_CREDENTIALS_MESSAGE);
@@ -84,7 +86,7 @@ public class AdminService {
 			return AdminLoginResponse.from(admin.get(), token);
 		}
 
-		checkPendingBizSignup(request);
+		checkPendingBizSignup(normalizedAdminId, request.password());
 
 		BizEmp emp = bizEmpRepository.findByEmpIdAndUseYn(request.adminId(), "Y")
 				.orElseThrow(() -> new BusinessException(HttpStatus.UNAUTHORIZED, INVALID_CREDENTIALS_MESSAGE));
@@ -98,9 +100,9 @@ public class AdminService {
 	// 셀프 가입 후 승인 대기(useYn=N)라 위 조회에 안 걸린 계정에게, 비밀번호가 맞을 때만
 	// 더 정확한 안내를 준다 — 비밀번호를 모르는 사람에게는 계정 존재 여부를 알려주지 않기 위해
 	// 항상 비밀번호 일치를 먼저 확인한 뒤에만 이 메시지를 노출한다.
-	private void checkPendingBizSignup(AdminLoginRequest request) {
-		AdminUsr disabled = adminUsrRepository.findById(request.adminId()).orElse(null);
-		if (disabled == null || !passwordEncoder.matches(request.password(), disabled.getPasswordHash())) {
+	private void checkPendingBizSignup(String normalizedAdminId, String password) {
+		AdminUsr disabled = adminUsrRepository.findById(normalizedAdminId).orElse(null);
+		if (disabled == null || !passwordEncoder.matches(password, disabled.getPasswordHash())) {
 			return;
 		}
 		Biz biz = bizRepository.findById(disabled.getBizRegNo()).orElse(null);

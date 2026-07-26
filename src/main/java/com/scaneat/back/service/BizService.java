@@ -127,8 +127,10 @@ public class BizService {
 		if (bizRepository.existsById(request.bizRegNo())) {
 			throw new BusinessException(HttpStatus.CONFLICT, "이미 등록된 사업자등록번호입니다: " + request.bizRegNo());
 		}
-		if (adminUsrRepository.existsById(request.adminId())) {
-			throw new BusinessException(HttpStatus.CONFLICT, "이미 사용 중인 아이디입니다: " + request.adminId());
+		// admin_id는 이메일이라 대소문자를 구분하지 않는다 — 항상 소문자로 정규화해서 저장/조회한다.
+		String normalizedAdminId = request.adminId().trim().toLowerCase();
+		if (adminUsrRepository.existsById(normalizedAdminId)) {
+			throw new BusinessException(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다: " + normalizedAdminId);
 		}
 
 		String ntsStatus = ntsClient.checkStatus(request.bizRegNo());
@@ -154,7 +156,7 @@ public class BizService {
 
 		// 승인 전까지는 로그인이 안 되도록 비활성 상태(useYn=N)로 계정만 미리 만들어둔다.
 		AdminUsr admin = AdminUsr.builder()
-				.adminId(request.adminId())
+				.adminId(normalizedAdminId)
 				.passwordHash(passwordEncoder.encode(request.password()))
 				.adminRole(AdminRole.BIZ)
 				.bizRegNo(request.bizRegNo())
