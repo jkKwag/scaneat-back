@@ -64,7 +64,10 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
 	private boolean requiresAuth(HttpServletRequest request) {
 		String uri = request.getRequestURI();
 		if (uri.startsWith("/api/biz/") || uri.equals("/api/biz")) {
-			if (uri.equals("/api/biz/signup") || uri.endsWith("/registration-cert")) return false;
+			if (uri.equals("/api/biz/signup") || uri.equals("/api/biz/signup/email-code")
+					|| uri.equals("/api/biz/signup/email-code/verify") || uri.endsWith("/registration-cert")) {
+				return false;
+			}
 			if (uri.endsWith("/employees") || uri.endsWith("/seats/admin") || uri.endsWith("/approvals")) return true;
 			return !"GET".equalsIgnoreCase(request.getMethod());
 		}

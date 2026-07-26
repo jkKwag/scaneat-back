@@ -11,6 +11,8 @@ import com.scaneat.back.dto.biz.BizRejectRequest;
 import com.scaneat.back.dto.biz.BizSignupRequest;
 import com.scaneat.back.dto.biz.BizSignupResponse;
 import com.scaneat.back.dto.biz.BizUpdateRequest;
+import com.scaneat.back.dto.biz.EmailCodeSendRequest;
+import com.scaneat.back.dto.biz.EmailCodeVerifyRequest;
 import com.scaneat.back.dto.biz.BizHourRequest;
 import com.scaneat.back.dto.biz.BizHourResponse;
 import com.scaneat.back.dto.biz.BizMenuRequest;
@@ -61,6 +63,19 @@ public class BizController {
 	@PostMapping
 	public ApiResponse<BizResponse> createBiz(@RequestBody BizCreateRequest request) {
 		return ApiResponse.ok(bizService.createBiz(request));
+	}
+
+	// 가입 폼에 이메일 입력 직후 인증코드 발송 — 아직 계정이 없으므로 공개 API
+	@PostMapping("/signup/email-code")
+	public ApiResponse<Void> sendEmailCode(@Valid @RequestBody EmailCodeSendRequest request) {
+		bizService.sendEmailCode(request);
+		return ApiResponse.ok(null);
+	}
+
+	@PostMapping("/signup/email-code/verify")
+	public ApiResponse<Void> verifyEmailCode(@Valid @RequestBody EmailCodeVerifyRequest request) {
+		bizService.verifyEmailCode(request);
+		return ApiResponse.ok(null);
 	}
 
 	// 손님/사업자가 직접 신청하는 셀프 가입 — 로그인 없이 열려있는 공개 API (WebConfig에서 제외 처리)

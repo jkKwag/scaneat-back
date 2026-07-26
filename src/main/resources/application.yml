@@ -46,6 +46,13 @@ nts:
   service-key: ${NTS_SERVICE_KEY}
   base-url: https://api.odcloud.kr/api/nts-businessman/v1
 
+aws:
+  ses:
+    access-key: ${AWS_SES_ACCESS_KEY}
+    secret-key: ${AWS_SES_SECRET_KEY}
+    region: ${AWS_SES_REGION}
+    from-address: ${AWS_SES_FROM_ADDRESS}
+
 logging:
   level:
     com.scaneat.back: INFO

@@ -27,4 +27,9 @@ public class RestClientConfig {
 	public RestClient ntsRestClient(@Value("${nts.base-url}") String baseUrl) {
 		return RestClient.builder().baseUrl(baseUrl).build();
 	}
+
+	@Bean
+	public RestClient sesRestClient(@Value("${aws.ses.region}") String region) {
+		return RestClient.builder().baseUrl("https://email." + region + ".amazonaws.com").build();
+	}
 }
