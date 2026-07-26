@@ -133,7 +133,7 @@ public class BizService {
 	public void sendEmailCode(EmailCodeSendRequest request) {
 		String email = request.email().trim().toLowerCase();
 		if (adminUsrRepository.existsById(email)) {
-			throw new BusinessException(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다: " + email);
+			throw new BusinessException(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다.");
 		}
 		String code = String.format("%06d", secureRandom.nextInt(1_000_000));
 		LocalDateTime now = LocalDateTime.now();
@@ -172,7 +172,7 @@ public class BizService {
 		// admin_id는 이메일이라 대소문자를 구분하지 않는다 — 항상 소문자로 정규화해서 저장/조회한다.
 		String normalizedAdminId = request.adminId().trim().toLowerCase();
 		if (adminUsrRepository.existsById(normalizedAdminId)) {
-			throw new BusinessException(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다: " + normalizedAdminId);
+			throw new BusinessException(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다.");
 		}
 		EmailVerifyCode verify = emailVerifyCodeRepository.findById(normalizedAdminId).orElse(null);
 		if (verify == null || !"Y".equals(verify.getVerifiedYn())) {
