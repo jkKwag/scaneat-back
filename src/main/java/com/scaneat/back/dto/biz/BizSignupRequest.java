@@ -6,7 +6,9 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record BizSignupRequest(
-		@NotBlank(message = "사업자등록번호를 입력해주세요.") String bizRegNo,
+		@NotBlank(message = "사업자등록번호를 입력해주세요.")
+		@Pattern(regexp = "^[0-9]{10}$", message = "사업자등록번호는 숫자 10자리여야 합니다.")
+		String bizRegNo,
 		@NotBlank(message = "상호명을 입력해주세요.") String bizNm,
 		// 대표자명은 나중에 사업자등록증 이미지 인식으로 채울 예정이라 가입 시점엔 받지 않는다.
 		String repNm,
