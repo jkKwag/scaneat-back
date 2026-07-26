@@ -37,7 +37,7 @@ public class AdminUsr {
 	private String totpSecret;
 
 	@Enumerated(EnumType.STRING)
-	@Column(name = "admin_role", length = 20, nullable = false)
+	@Column(name = "admin_role_cd", length = 20, nullable = false)
 	private AdminRole adminRole;
 
 	@Column(name = "biz_reg_no", length = 10)
