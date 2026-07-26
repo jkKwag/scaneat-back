@@ -55,7 +55,6 @@ import com.scaneat.back.repository.EmailVerifyCodeRepository;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import lombok.RequiredArgsConstructor;
@@ -186,7 +185,6 @@ public class BizService {
 		}
 
 		NtsStatusResult ntsResult = ntsClient.checkStatus(request.bizRegNo());
-		String signupToken = generateSignupToken();
 		LocalDateTime now = LocalDateTime.now();
 
 		Biz biz = Biz.builder()
@@ -203,7 +201,6 @@ public class BizService {
 				.approvalStatus("PENDING")
 				.ntsStatusCd(ntsResult.statusCd())
 				.ntsStatusMsg(ntsResult.errorMessage())
-				.signupToken(signupToken)
 				.build();
 		bizRepository.save(biz);
 
@@ -223,7 +220,7 @@ public class BizService {
 		emailVerifyCodeRepository.deleteById(normalizedAdminId);
 
 		String ntsDisplay = resolveNtsDisplay(ntsResult.statusCd(), ntsResult.errorMessage());
-		return new BizSignupResponse(biz.getBizRegNo(), signupToken, ntsDisplay);
+		return new BizSignupResponse(biz.getBizRegNo(), ntsDisplay);
 	}
 
 	// 코드가 있으면 공통코드(NTS_STT_CD)에서 라벨을 찾아 보여주고, 없으면 실패 메시지(있으면)를 그대로 보여준다.
@@ -236,16 +233,12 @@ public class BizService {
 				.orElse(statusCd);
 	}
 
-	// 가입 직후(아직 로그인 불가) 사업자등록증을 업로드할 때 — signupToken으로 본인 가입건인지 확인한다.
+	// PROV_ADMIN(또는 SUPER)이 로그인 후 본인 화면에서 사업자등록증을 업로드/재업로드한다 —
+	// 인증/소유권 확인은 AdminAuthInterceptor가 이미 처리하므로 여기서 별도 토큰 확인은 불필요.
 	@Transactional
-	public void uploadRegistrationCert(String bizRegNo, String signupToken, MultipartFile file) {
+	public void uploadRegistrationCert(String bizRegNo, MultipartFile file) {
 		Biz biz = bizRepository.findById(bizRegNo)
 				.orElseThrow(() -> new ResourceNotFoundException("사업자를 찾을 수 없습니다: " + bizRegNo));
-		if (!"PENDING".equals(biz.getApprovalStatus())
-				|| biz.getSignupToken() == null
-				|| !biz.getSignupToken().equals(signupToken)) {
-			throw new BusinessException(HttpStatus.FORBIDDEN, "가입 절차가 유효하지 않습니다.");
-		}
 		if (file.isEmpty()) {
 			throw new BusinessException(HttpStatus.BAD_REQUEST, "업로드할 파일이 없습니다.");
 		}
@@ -263,6 +256,13 @@ public class BizService {
 		bizRepository.save(biz);
 	}
 
+	// 본인(또는 SUPER)이 업로드된 사업자등록증을 확인할 때 — 매번 새로 서명된 URL을 내려준다.
+	public String getRegistrationCertUrl(String bizRegNo) {
+		Biz biz = bizRepository.findById(bizRegNo)
+				.orElseThrow(() -> new ResourceNotFoundException("사업자를 찾을 수 없습니다: " + bizRegNo));
+		return signedCertUrl(biz);
+	}
+
 	// SUPER 관리자 전용 — 승인 대기 중인 가입건 목록 (사업자등록증은 매번 새로 서명된 URL로 내려줌)
 	public List<BizApprovalResponse> getPendingApprovals(CurrentAdmin requester) {
 		requireSuperForApproval(requester);
@@ -278,7 +278,6 @@ public class BizService {
 		Biz biz = bizRepository.findById(bizRegNo)
 				.orElseThrow(() -> new ResourceNotFoundException("사업자를 찾을 수 없습니다: " + bizRegNo));
 		biz.setApprovalStatus("APPROVED");
-		biz.setSignupToken(null);
 		bizRepository.save(biz);
 		adminUsrRepository.findByBizRegNoOrderByRegDtAsc(bizRegNo).forEach(admin -> {
 			admin.setUseYn("Y");
@@ -296,7 +295,6 @@ public class BizService {
 				.orElseThrow(() -> new ResourceNotFoundException("사업자를 찾을 수 없습니다: " + bizRegNo));
 		biz.setApprovalStatus("REJECTED");
 		biz.setRejectRsn(request.reason());
-		biz.setSignupToken(null);
 		bizRepository.save(biz);
 	}
 
@@ -311,18 +309,15 @@ public class BizService {
 		}
 	}
 
-	private String generateSignupToken() {
-		byte[] randomBytes = new byte[24];
-		secureRandom.nextBytes(randomBytes);
-		return Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
-	}
-
 	@Transactional
 	public BizResponse updateBiz(String bizRegNo, BizUpdateRequest request) {
 		Biz biz = bizRepository.findById(bizRegNo)
 				.orElseThrow(() -> new ResourceNotFoundException("사업자를 찾을 수 없습니다: " + bizRegNo));
 		biz.setBizNm(request.bizNm());
+		// repNm/mobileTel은 이 화면(AdminBizList)에서 항상 넘겨주지 않는 값이라, null이면 기존 값을 유지한다.
+		if (request.repNm() != null) biz.setRepNm(request.repNm());
 		biz.setTelNo(request.telNo());
+		if (request.mobileTel() != null) biz.setMobileTel(request.mobileTel());
 		biz.setEmailAddr(request.emailAddr());
 		biz.setIndCd(request.indCd());
 		biz.setAddr(request.addr());

@@ -84,12 +84,16 @@ public class BizController {
 		return ApiResponse.ok(bizService.signup(request));
 	}
 
-	// 가입 직후(로그인 전) 사업자등록증 업로드 — signupToken으로 본인 가입건인지 확인
+	// 로그인 후(본인 또는 SUPER) 사업자등록증 업로드/재업로드 — 소유권 확인은 AdminAuthInterceptor가 처리
 	@PostMapping(value = "/{bizno}/registration-cert", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ApiResponse<Void> uploadRegistrationCert(
-			@PathVariable String bizno, @RequestParam String signupToken, @RequestParam("file") MultipartFile file) {
-		bizService.uploadRegistrationCert(bizno, signupToken, file);
+	public ApiResponse<Void> uploadRegistrationCert(@PathVariable String bizno, @RequestParam("file") MultipartFile file) {
+		bizService.uploadRegistrationCert(bizno, file);
 		return ApiResponse.ok(null);
+	}
+
+	@GetMapping("/{bizno}/registration-cert")
+	public ApiResponse<String> getRegistrationCertUrl(@PathVariable String bizno) {
+		return ApiResponse.ok(bizService.getRegistrationCertUrl(bizno));
 	}
 
 	// SUPER 전용 — 승인 대기 중인 가입건 목록
