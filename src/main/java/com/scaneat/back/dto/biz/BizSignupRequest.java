@@ -2,6 +2,7 @@ package com.scaneat.back.dto.biz;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record BizSignupRequest(
@@ -10,6 +11,8 @@ public record BizSignupRequest(
 		// 대표자명은 나중에 사업자등록증 이미지 인식으로 채울 예정이라 가입 시점엔 받지 않는다.
 		String repNm,
 		String telNo,
+		@NotBlank(message = "휴대폰번호를 입력해주세요.")
+		@Pattern(regexp = "^01[0-9]{8,9}$", message = "휴대폰번호 형식이 올바르지 않습니다.")
 		String mobileTel,
 		String emailAddr,
 		String indCd,
