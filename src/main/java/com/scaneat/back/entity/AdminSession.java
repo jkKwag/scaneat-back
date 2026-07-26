@@ -29,7 +29,7 @@ public class AdminSession {
 	@Column(name = "admin_id", length = 255, nullable = false)
 	private String adminId;
 
-	@Column(name = "admin_role", length = 20, nullable = false)
+	@Column(name = "admin_role_cd", length = 20, nullable = false)
 	private String adminRole;
 
 	@Column(name = "biz_reg_no", length = 10)

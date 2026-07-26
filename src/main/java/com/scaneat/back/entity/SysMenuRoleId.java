@@ -1,5 +1,6 @@
 package com.scaneat.back.entity;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import java.io.Serializable;
 import lombok.AllArgsConstructor;
@@ -18,5 +19,6 @@ public class SysMenuRoleId implements Serializable {
 
 	private String menuCd;
 
+	@Column(name = "admin_role_cd")
 	private String adminRole;
 }
