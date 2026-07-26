@@ -1,8 +1,8 @@
 package com.scaneat.back.entity;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
@@ -10,36 +10,19 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.ColumnDefault;
 
+// 메뉴 하나에 여러 역할(SUPER/BIZ/EMPLOYEE)을 각각 행으로 매핑 — tb_sys_menu.admin_role(단일값) 대체.
 @Entity
-@Table(name = "tb_sys_menu")
+@Table(name = "tb_sys_menu_role")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SysMenu {
+public class SysMenuRole {
 
-	@Id
-	@Column(name = "menu_cd", length = 20)
-	private String menuCd;
-
-	@Column(name = "upper_menu_cd", length = 20)
-	private String upperMenuCd;
-
-	@Column(name = "menu_nm", length = 100, nullable = false)
-	private String menuNm;
-
-	@Column(name = "menu_url", length = 200)
-	private String menuUrl;
-
-	@Column(name = "sort_ord")
-	private Integer sortOrd;
-
-	@ColumnDefault("'Y'")
-	@Column(name = "use_yn", length = 1, nullable = false)
-	private String useYn;
+	@EmbeddedId
+	private SysMenuRoleId id;
 
 	@Column(name = "reg_usr_id", length = 50)
 	private String regUsrId;

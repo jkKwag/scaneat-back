@@ -23,6 +23,7 @@ import com.scaneat.back.repository.AdminUsrRepository;
 import com.scaneat.back.repository.BizEmpRepository;
 import com.scaneat.back.repository.BizRepository;
 import com.scaneat.back.repository.SysMenuRepository;
+import com.scaneat.back.repository.SysMenuRoleRepository;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
@@ -58,6 +59,7 @@ public class AdminService {
 	private final BizEmpRepository bizEmpRepository;
 	private final BizRepository bizRepository;
 	private final SysMenuRepository sysMenuRepository;
+	private final SysMenuRoleRepository sysMenuRoleRepository;
 	private final AdminSessionRepository adminSessionRepository;
 	private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 	private final SecureRandom secureRandom = new SecureRandom();
@@ -227,7 +229,10 @@ public class AdminService {
 	}
 
 	public List<SysMenuResponse> getMenuTree(String adminRole) {
-		List<SysMenu> menus = sysMenuRepository.findByAdminRoleInAndUseYnOrderBySortOrdAsc(List.of(adminRole, "ALL"), "Y");
+		List<String> menuCds = sysMenuRoleRepository.findById_AdminRole(adminRole).stream()
+				.map(sr -> sr.getId().getMenuCd())
+				.toList();
+		List<SysMenu> menus = sysMenuRepository.findByMenuCdInAndUseYnOrderBySortOrdAsc(menuCds, "Y");
 		Map<String, List<SysMenu>> childrenByParent = menus.stream()
 				.collect(Collectors.groupingBy(m -> m.getUpperMenuCd() == null ? "ROOT" : m.getUpperMenuCd()));
 		return buildTree(childrenByParent, "ROOT");
