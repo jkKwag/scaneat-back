@@ -1,6 +1,7 @@
 package com.scaneat.back.service;
 
 import com.scaneat.back.client.NtsClient;
+import com.scaneat.back.client.NtsStatusResult;
 import com.scaneat.back.client.SesClient;
 import com.scaneat.back.client.SupabaseStorageClient;
 import com.scaneat.back.common.exception.BusinessException;
@@ -38,6 +39,8 @@ import com.scaneat.back.entity.BizMenu;
 import com.scaneat.back.entity.BizRsvnStd;
 import com.scaneat.back.entity.BizSeat;
 import com.scaneat.back.entity.BizSeatId;
+import com.scaneat.back.entity.CmmCd;
+import com.scaneat.back.entity.CmmCdId;
 import com.scaneat.back.entity.EmailVerifyCode;
 import com.scaneat.back.repository.AdminUsrRepository;
 import com.scaneat.back.repository.BizCatRepository;
@@ -47,6 +50,7 @@ import com.scaneat.back.repository.BizMenuRepository;
 import com.scaneat.back.repository.BizRepository;
 import com.scaneat.back.repository.BizRsvnStdRepository;
 import com.scaneat.back.repository.BizSeatRepository;
+import com.scaneat.back.repository.CmmCdRepository;
 import com.scaneat.back.repository.EmailVerifyCodeRepository;
 import java.io.IOException;
 import java.security.SecureRandom;
@@ -72,11 +76,13 @@ public class BizService {
 	private static final String BIZ_CERT_BUCKET = "biz-cert";
 	private static final int BIZ_CERT_SIGNED_URL_TTL_SECONDS = 600;
 	private static final int EMAIL_CODE_TTL_MINUTES = 5;
+	private static final String NTS_STT_GRP_CD = "NTS_STT_CD";
 
 	private final BizRepository bizRepository;
 	private final SupabaseStorageClient supabaseStorageClient;
 	private final SesClient sesClient;
 	private final EmailVerifyCodeRepository emailVerifyCodeRepository;
+	private final CmmCdRepository cmmCdRepository;
 	private final BizCatRepository bizCatRepository;
 	private final BizMenuRepository bizMenuRepository;
 	private final BizHourStdRepository bizHourStdRepository;
@@ -179,7 +185,7 @@ public class BizService {
 			throw new BusinessException(HttpStatus.BAD_REQUEST, "이메일 인증을 먼저 완료해주세요.");
 		}
 
-		String ntsStatus = ntsClient.checkStatus(request.bizRegNo());
+		NtsStatusResult ntsResult = ntsClient.checkStatus(request.bizRegNo());
 		String signupToken = generateSignupToken();
 		LocalDateTime now = LocalDateTime.now();
 
@@ -195,7 +201,8 @@ public class BizService {
 				.addr(request.addr())
 				.addrDtl(request.addrDtl())
 				.approvalStatus("PENDING")
-				.ntsStatus(ntsStatus)
+				.ntsStatusCd(ntsResult.statusCd())
+				.ntsStatusMsg(ntsResult.errorMessage())
 				.signupToken(signupToken)
 				.build();
 		bizRepository.save(biz);
@@ -214,7 +221,18 @@ public class BizService {
 		adminUsrRepository.save(admin);
 		emailVerifyCodeRepository.deleteById(normalizedAdminId);
 
-		return new BizSignupResponse(biz.getBizRegNo(), signupToken, ntsStatus);
+		String ntsDisplay = resolveNtsDisplay(ntsResult.statusCd(), ntsResult.errorMessage());
+		return new BizSignupResponse(biz.getBizRegNo(), signupToken, ntsDisplay);
+	}
+
+	// 코드가 있으면 공통코드(NTS_STT_CD)에서 라벨을 찾아 보여주고, 없으면 실패 메시지(있으면)를 그대로 보여준다.
+	private String resolveNtsDisplay(String statusCd, String statusMsg) {
+		if (statusCd == null) {
+			return statusMsg;
+		}
+		return cmmCdRepository.findById(new CmmCdId(NTS_STT_GRP_CD, statusCd))
+				.map(CmmCd::getCdNm)
+				.orElse(statusCd);
 	}
 
 	// 가입 직후(아직 로그인 불가) 사업자등록증을 업로드할 때 — signupToken으로 본인 가입건인지 확인한다.
@@ -248,7 +266,8 @@ public class BizService {
 	public List<BizApprovalResponse> getPendingApprovals(CurrentAdmin requester) {
 		requireSuperForApproval(requester);
 		return bizRepository.findByApprovalStatus("PENDING").stream()
-				.map(biz -> BizApprovalResponse.from(biz, signedCertUrl(biz)))
+				.map(biz -> BizApprovalResponse.from(biz, signedCertUrl(biz),
+						resolveNtsDisplay(biz.getNtsStatusCd(), biz.getNtsStatusMsg())))
 				.toList();
 	}
 
