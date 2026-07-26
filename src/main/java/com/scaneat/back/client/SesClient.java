@@ -48,10 +48,13 @@ public class SesClient {
 		this.host = "email." + region + ".amazonaws.com";
 	}
 
+	// SES가 아직 샌드박스 모드라 인증된 주소로만 발송 가능 — 가입자 이메일이 아니라
+	// 관리자 발신 주소(fromAddress)로 보내고, 어떤 이메일로 가입 시도했는지는 본문에 표시한다.
+	// 나중에 SES Production access 승인되면 toEmail로 다시 바꿔야 한다.
 	public void sendVerificationCode(String toEmail, String code) {
-		String subject = "[Scaneat] 이메일 인증코드";
-		String body = "인증코드: " + code + "\n5분 이내에 입력해주세요.";
-		sendEmail(toEmail, subject, body);
+		String subject = "[Scaneat] 이메일 인증코드 (" + toEmail + ")";
+		String body = "가입 시도한 이메일: " + toEmail + "\n인증코드: " + code + "\n5분 이내에 입력해주세요.";
+		sendEmail(fromAddress, subject, body);
 	}
 
 	private void sendEmail(String toEmail, String subject, String bodyText) {
