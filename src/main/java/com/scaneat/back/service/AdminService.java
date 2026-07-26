@@ -27,9 +27,11 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -206,11 +208,25 @@ public class AdminService {
 	}
 
 	public List<SysMenuResponse> getMenuTree(String adminRole) {
-		List<String> menuCds = sysMenuRoleRepository.findById_AdminRole(adminRole).stream()
+		List<String> grantedMenuCds = sysMenuRoleRepository.findById_AdminRole(adminRole).stream()
 				.map(sr -> sr.getId().getMenuCd())
 				.toList();
-		List<SysMenu> menus = sysMenuRepository.findByMenuCdInAndUseYnOrderBySortOrdAsc(menuCds, "Y");
-		Map<String, List<SysMenu>> childrenByParent = menus.stream()
+		List<SysMenu> allMenus = sysMenuRepository.findByUseYnOrderBySortOrdAsc("Y");
+		Map<String, SysMenu> menuByCd = allMenus.stream().collect(Collectors.toMap(SysMenu::getMenuCd, m -> m));
+
+		// 자식 메뉴에 권한이 있으면, 그걸 담고 있는 상위(그룹) 메뉴도 자동으로 같이 보이게 조상까지 따라 올라간다 —
+		// 상위 메뉴는 그냥 묶는 카테고리일 뿐이라 별도로 권한을 매길 필요가 없다.
+		Set<String> visibleCds = new HashSet<>();
+		for (String cd : grantedMenuCds) {
+			String cur = cd;
+			while (cur != null && visibleCds.add(cur)) {
+				SysMenu m = menuByCd.get(cur);
+				cur = m == null ? null : m.getUpperMenuCd();
+			}
+		}
+
+		List<SysMenu> visibleMenus = allMenus.stream().filter(m -> visibleCds.contains(m.getMenuCd())).toList();
+		Map<String, List<SysMenu>> childrenByParent = visibleMenus.stream()
 				.collect(Collectors.groupingBy(m -> m.getUpperMenuCd() == null ? "ROOT" : m.getUpperMenuCd()));
 		return buildTree(childrenByParent, "ROOT");
 	}

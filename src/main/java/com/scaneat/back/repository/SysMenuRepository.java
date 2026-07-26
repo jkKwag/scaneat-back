@@ -6,5 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface SysMenuRepository extends JpaRepository<SysMenu, String> {
 
-	List<SysMenu> findByMenuCdInAndUseYnOrderBySortOrdAsc(List<String> menuCds, String useYn);
+	List<SysMenu> findByUseYnOrderBySortOrdAsc(String useYn);
 }
