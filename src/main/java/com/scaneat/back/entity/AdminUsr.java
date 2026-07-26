@@ -23,8 +23,9 @@ import org.hibernate.annotations.ColumnDefault;
 @Builder
 public class AdminUsr {
 
+	// 이메일 주소를 그대로 저장한다 (별도 email 컬럼 없이 admin_id 자체가 이메일).
 	@Id
-	@Column(name = "admin_id", length = 50)
+	@Column(name = "admin_id", length = 255)
 	private String adminId;
 
 	@Column(name = "password_hash", length = 200, nullable = false)

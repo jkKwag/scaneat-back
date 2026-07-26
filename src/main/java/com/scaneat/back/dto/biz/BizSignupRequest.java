@@ -1,5 +1,6 @@
 package com.scaneat.back.dto.biz;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -14,7 +15,10 @@ public record BizSignupRequest(
 		String indCd,
 		String addr,
 		String addrDtl,
-		@NotBlank(message = "관리자 아이디를 입력해주세요.") String adminId,
+		// admin_id(PK)를 이메일로 쓰기로 해서, 관리자 아이디는 이메일 형식만 허용한다.
+		@NotBlank(message = "이메일을 입력해주세요.")
+		@Email(message = "올바른 이메일 형식이 아닙니다.")
+		String adminId,
 		@NotBlank(message = "비밀번호를 입력해주세요.")
 		@Size(min = 8, message = "비밀번호는 8자 이상이어야 합니다.")
 		String password
