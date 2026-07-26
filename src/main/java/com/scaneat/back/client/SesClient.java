@@ -8,6 +8,8 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -17,6 +19,8 @@ import org.springframework.web.client.RestClientResponseException;
 
 @Component
 public class SesClient {
+
+	private static final Logger log = LoggerFactory.getLogger(SesClient.class);
 
 	private static final String SERVICE = "ses";
 	private static final DateTimeFormatter AMZ_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'");
@@ -72,8 +76,10 @@ public class SesClient {
 					.retrieve()
 					.toBodilessEntity();
 		} catch (RestClientResponseException ex) {
+			log.error("SES 발송 실패: status={}, body={}", ex.getStatusCode(), ex.getResponseBodyAsString());
 			throw new BusinessException(HttpStatus.BAD_GATEWAY, "이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.");
 		} catch (Exception ex) {
+			log.error("SES 발송 중 오류", ex);
 			throw new BusinessException(HttpStatus.INTERNAL_SERVER_ERROR, "이메일 발송 중 오류가 발생했습니다.");
 		}
 	}
