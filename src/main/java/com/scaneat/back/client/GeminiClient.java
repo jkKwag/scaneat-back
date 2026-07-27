@@ -35,6 +35,7 @@ public class GeminiClient {
 	);
 
 	private final RestClient geminiRestClient;
+	private final RestClient geminiVisionRestClient;
 	private final ObjectMapper objectMapper;
 	private final String apiKey;
 	private final String model;
@@ -109,10 +110,12 @@ public class GeminiClient {
 	);
 
 	public GeminiClient(RestClient geminiRestClient,
+			RestClient geminiVisionRestClient,
 			ObjectMapper objectMapper,
 			@Value("${gemini.api-key}") String apiKey,
 			@Value("${gemini.model}") String model) {
 		this.geminiRestClient = geminiRestClient;
+		this.geminiVisionRestClient = geminiVisionRestClient;
 		this.objectMapper = objectMapper;
 		this.apiKey = apiKey;
 		this.model = model;
@@ -187,7 +190,7 @@ public class GeminiClient {
 
 		Map<String, Object> response;
 		try {
-			response = geminiRestClient.post()
+			response = geminiVisionRestClient.post()
 					.uri("/models/{model}:generateContent?key={apiKey}", model, apiKey)
 					.body(requestBody)
 					.retrieve()

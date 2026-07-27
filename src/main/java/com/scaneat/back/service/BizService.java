@@ -263,15 +263,20 @@ public class BizService {
 		supabaseStorageClient.upload(BIZ_CERT_BUCKET, path, bytes, "image/jpeg");
 		biz.setBizCertPath(path);
 		bizRepository.save(biz);
+		return new BizCertUploadResponse(signedCertUrl(biz), null);
+	}
 
-		// 인식은 어디까지나 입력을 도와주는 보조 기능 — 실패해도 업로드 자체는 이미 끝난 상태이므로 막지 않는다.
-		BizCertExtractResult extracted = null;
+	// 업로드와 별도 호출 — 인식은 시간이 걸릴 수 있어 업로드 응답과 분리해서, 실패해도 업로드 자체엔 영향 없게 한다.
+	public BizCertExtractResult extractCertInfo(String bizRegNo, MultipartFile file) {
+		bizRepository.findById(bizRegNo)
+				.orElseThrow(() -> new ResourceNotFoundException("사업자를 찾을 수 없습니다: " + bizRegNo));
+		String contentType = file.getContentType();
 		try {
-			extracted = geminiClient.extractBizCertInfo(bytes, contentType);
+			return geminiClient.extractBizCertInfo(file.getBytes(), contentType);
 		} catch (Exception e) {
 			log.warn("사업자등록증 정보 인식 실패: bizRegNo={}", bizRegNo, e);
+			return null;
 		}
-		return new BizCertUploadResponse(signedCertUrl(biz), extracted);
 	}
 
 	// 본인(또는 SUPER)이 업로드된 사업자등록증을 확인할 때 — 매번 새로 서명된 URL을 내려준다.
