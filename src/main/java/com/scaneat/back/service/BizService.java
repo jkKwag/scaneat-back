@@ -267,6 +267,7 @@ public class BizService {
 	}
 
 	// 업로드와 별도 호출 — 인식은 시간이 걸릴 수 있어 업로드 응답과 분리해서, 실패해도 업로드 자체엔 영향 없게 한다.
+	// TODO: 원인 파악되면 실패를 다시 삼키고 null을 반환하도록 되돌릴 것 — 지금은 진단을 위해 실패 사유를 그대로 클라이언트에 내려준다.
 	public BizCertExtractResult extractCertInfo(String bizRegNo, MultipartFile file) {
 		bizRepository.findById(bizRegNo)
 				.orElseThrow(() -> new ResourceNotFoundException("사업자를 찾을 수 없습니다: " + bizRegNo));
@@ -275,7 +276,7 @@ public class BizService {
 			return geminiClient.extractBizCertInfo(file.getBytes(), contentType);
 		} catch (Exception e) {
 			log.warn("사업자등록증 정보 인식 실패: bizRegNo={}", bizRegNo, e);
-			return null;
+			throw new BusinessException(HttpStatus.BAD_GATEWAY, "사업자등록증 인식에 실패했습니다: " + e.getMessage());
 		}
 	}
 
