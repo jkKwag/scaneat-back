@@ -5,6 +5,7 @@ import com.scaneat.back.common.security.CurrentAdmin;
 import com.scaneat.back.dto.biz.BizApprovalResponse;
 import com.scaneat.back.dto.biz.BizCatRequest;
 import com.scaneat.back.dto.biz.BizCatResponse;
+import com.scaneat.back.dto.biz.BizCertExtractResult;
 import com.scaneat.back.dto.biz.BizCertUploadResponse;
 import com.scaneat.back.dto.biz.BizEmpResponse;
 import com.scaneat.back.dto.biz.BizCreateRequest;
@@ -94,6 +95,12 @@ public class BizController {
 	@GetMapping("/{bizno}/registration-cert")
 	public ApiResponse<String> getRegistrationCertUrl(@PathVariable String bizno) {
 		return ApiResponse.ok(bizService.getRegistrationCertUrl(bizno));
+	}
+
+	// 업로드 완료 후 프론트가 이어서 호출 — 업로드 응답과 분리해서 인식이 오래 걸려도 업로드 자체엔 영향 없게 한다.
+	@PostMapping(value = "/{bizno}/registration-cert/extract", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public ApiResponse<BizCertExtractResult> extractCertInfo(@PathVariable String bizno, @RequestParam("file") MultipartFile file) {
+		return ApiResponse.ok(bizService.extractCertInfo(bizno, file));
 	}
 
 	// SUPER 전용 — 승인 대기 중인 가입건 목록
