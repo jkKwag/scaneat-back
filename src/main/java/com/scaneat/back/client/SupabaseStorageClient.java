@@ -29,8 +29,9 @@ public class SupabaseStorageClient {
 
 	public String upload(String bucket, String path, byte[] content, String contentType) {
 		try {
+			// path에 포함된 "/"가 경로 구분자로 살아있어야 한다 — {} 템플릿 변수로 넘기면 "/"까지 %2F로 인코딩돼버린다.
 			supabaseRestClient.post()
-					.uri("/storage/v1/object/{bucket}/{path}", bucket, path)
+					.uri("/storage/v1/object/" + bucket + "/" + path)
 					.header(HttpHeaders.AUTHORIZATION, "Bearer " + serviceRoleKey)
 					.header("apikey", serviceRoleKey)
 					.header("x-upsert", "true")
@@ -51,7 +52,7 @@ public class SupabaseStorageClient {
 	public String createSignedUrl(String bucket, String path, int expiresInSeconds) {
 		try {
 			Map<String, Object> response = supabaseRestClient.post()
-					.uri("/storage/v1/object/sign/{bucket}/{path}", bucket, path)
+					.uri("/storage/v1/object/sign/" + bucket + "/" + path)
 					.header(HttpHeaders.AUTHORIZATION, "Bearer " + serviceRoleKey)
 					.header("apikey", serviceRoleKey)
 					.contentType(MediaType.APPLICATION_JSON)
