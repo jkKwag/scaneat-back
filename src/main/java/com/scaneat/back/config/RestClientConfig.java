@@ -16,9 +16,16 @@ public class RestClientConfig {
 		return RestClient.builder().baseUrl(baseUrl).build();
 	}
 
+	// 이미지 인식 호출이 오래 걸려도 업로드 요청 자체가 무한정 붙잡히지 않도록 제한시간을 둔다.
 	@Bean
 	public RestClient geminiRestClient(@Value("${gemini.base-url}") String baseUrl) {
-		return RestClient.builder().baseUrl(baseUrl).build();
+		ClientHttpRequestFactorySettings settings = ClientHttpRequestFactorySettings.DEFAULTS
+				.withConnectTimeout(Duration.ofSeconds(4))
+				.withReadTimeout(Duration.ofSeconds(8));
+		return RestClient.builder()
+				.baseUrl(baseUrl)
+				.requestFactory(ClientHttpRequestFactories.get(settings))
+				.build();
 	}
 
 	// 사업자등록증 이미지 인식 전용 — 채팅과 분리된 별도 호출이라 넉넉한 제한시간을 둬도 다른 기능에 영향 없다.
