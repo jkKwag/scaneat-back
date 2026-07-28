@@ -25,6 +25,7 @@ import com.scaneat.back.dto.biz.BizHourRequest;
 import com.scaneat.back.dto.biz.BizHourResponse;
 import com.scaneat.back.dto.biz.BizMenuRequest;
 import com.scaneat.back.dto.biz.BizMenuResponse;
+import com.scaneat.back.dto.biz.BizNtsStatusResponse;
 import com.scaneat.back.dto.biz.BizPageResponse;
 import com.scaneat.back.dto.biz.BizResponse;
 import com.scaneat.back.dto.biz.BizRsvnStdRequest;
@@ -238,6 +239,20 @@ public class BizService {
 		return cmmCdRepository.findById(new CmmCdId(NTS_STT_GRP_CD, statusCd))
 				.map(CmmCd::getCdNm)
 				.orElse(statusCd);
+	}
+
+	// 사업자등록증 업로드 직후 등 필요할 때마다 국세청 상태조회를 재호출한다 — 결과는 매번 최신으로 biz에 갱신해둔다.
+	@Transactional
+	public BizNtsStatusResponse checkNtsStatus(String bizRegNo) {
+		Biz biz = bizRepository.findById(bizRegNo)
+				.orElseThrow(() -> new ResourceNotFoundException("사업자를 찾을 수 없습니다: " + bizRegNo));
+
+		NtsStatusResult ntsResult = ntsClient.checkStatus(bizRegNo);
+		biz.setNtsStatusCd(ntsResult.statusCd());
+		biz.setNtsStatusMsg(ntsResult.errorMessage());
+		bizRepository.save(biz);
+
+		return new BizNtsStatusResponse(ntsResult.statusCd(), resolveNtsDisplay(ntsResult.statusCd(), ntsResult.errorMessage()));
 	}
 
 	// PROV_ADMIN(또는 SUPER)이 로그인 후 본인 화면에서 사업자등록증을 업로드/재업로드한다 —
