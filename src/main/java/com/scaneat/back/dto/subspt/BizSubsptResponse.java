@@ -15,10 +15,12 @@ public record BizSubsptResponse(
 		boolean hasBillingKey,
 		String status,
 		LocalDate nextBillingDt,
+		String pendingPlanCd,
+		String pendingPlanNm,
 		LocalDateTime startedDt,
 		LocalDateTime canceledDt
 ) {
-	public static BizSubsptResponse from(BizSubspt subspt, String planNm) {
+	public static BizSubsptResponse from(BizSubspt subspt, String planNm, String pendingPlanNm) {
 		return new BizSubsptResponse(
 				subspt.getBizRegNo(),
 				subspt.getPlanCd(),
@@ -29,6 +31,8 @@ public record BizSubsptResponse(
 				subspt.getBillingKey() != null,
 				subspt.getStatus(),
 				subspt.getNextBillingDt(),
+				subspt.getPendingPlanCd(),
+				pendingPlanNm,
 				subspt.getStartedDt(),
 				subspt.getCanceledDt()
 		);
