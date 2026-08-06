@@ -80,7 +80,7 @@ public class BizSubsptService {
 		LocalDate today = now.toLocalDate();
 		BigDecimal totalAmount = plan.getSuppliedAmount().add(plan.getVat());
 		String billingPeriod = today.format(BILLING_PERIOD_FMT);
-		String orderId = "subspt-" + bizRegNo + "-" + billingPeriod;
+		String orderId = "subspt-" + bizRegNo + "-" + billingPeriod + "-" + System.currentTimeMillis();
 
 		Map<String, Object> chargeResult = tossPaymentsClient.chargeBilling(
 				billingKey, request.customerKey(), orderId, plan.getPlanNm() + " 구독료", totalAmount);
