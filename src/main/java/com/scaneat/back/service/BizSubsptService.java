@@ -69,6 +69,12 @@ public class BizSubsptService {
 		BizSubPlan plan = bizSubPlanRepository.findById(request.planCd())
 				.orElseThrow(() -> new ResourceNotFoundException("요금제를 찾을 수 없습니다: " + request.planCd()));
 
+		BizSubspt existingSubspt = bizSubsptRepository.findById(bizRegNo).orElse(null);
+		if (existingSubspt != null && "ACTIVE".equals(existingSubspt.getStatus())
+				&& existingSubspt.getPlanCd().equals(plan.getPlanCd())) {
+			throw new BusinessException("이미 해당 요금제를 구독 중입니다.");
+		}
+
 		Map<String, Object> billingAuth = tossPaymentsClient.issueBillingKey(request.authKey(), request.customerKey());
 		log.info("[Toss] billing key issue raw response: {}", billingAuth);
 		String billingKey = (String) billingAuth.get("billingKey");
@@ -108,7 +114,7 @@ public class BizSubsptService {
 			throw new BusinessException(HttpStatus.BAD_GATEWAY, "첫 구독료 결제에 실패했습니다: " + status);
 		}
 
-		BizSubspt subspt = bizSubsptRepository.findById(bizRegNo).orElse(null);
+		BizSubspt subspt = existingSubspt;
 		LocalDate nextBillingDt = today.plusMonths(1);
 		if (subspt == null) {
 			subspt = BizSubspt.builder()
