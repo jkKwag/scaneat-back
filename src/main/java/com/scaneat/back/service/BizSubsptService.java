@@ -42,6 +42,7 @@ public class BizSubsptService {
 	private final BizSubsptRepository bizSubsptRepository;
 	private final BizSubsptPaymentRepository bizSubsptPaymentRepository;
 	private final AdminUsrRepository adminUsrRepository;
+	private final BizService bizService;
 
 	public List<BizSubPlanResponse> getPlans() {
 		return bizSubPlanRepository.findByUseYnOrderBySortOrdAsc("Y").stream()
@@ -144,6 +145,9 @@ public class BizSubsptService {
 		}
 		bizSubsptRepository.save(subspt);
 		promoteProvAdmins(bizRegNo);
+		if (existingSubspt == null) {
+			bizService.seedFromTemplate(bizRegNo);
+		}
 
 		return toResponse(subspt);
 	}
