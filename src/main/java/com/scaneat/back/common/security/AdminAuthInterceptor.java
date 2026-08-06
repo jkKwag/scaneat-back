@@ -68,7 +68,7 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
 				return false;
 			}
 			if (uri.endsWith("/employees") || uri.endsWith("/seats/admin") || uri.endsWith("/approvals")
-					|| uri.endsWith("/registration-cert")) {
+					|| uri.endsWith("/registration-cert") || uri.contains("/subscription")) {
 				return true;
 			}
 			return !"GET".equalsIgnoreCase(request.getMethod());

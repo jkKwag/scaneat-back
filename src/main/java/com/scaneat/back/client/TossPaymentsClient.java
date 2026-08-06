@@ -24,13 +24,10 @@ public class TossPaymentsClient {
 	}
 
 	public Map<String, Object> confirmPayment(String paymentKey, String orderId, BigDecimal amount) {
-		String encodedAuth = Base64.getEncoder()
-				.encodeToString((secretKey + ":").getBytes(StandardCharsets.UTF_8));
-
 		try {
 			return tossRestClient.post()
 					.uri("/v1/payments/confirm")
-					.header(HttpHeaders.AUTHORIZATION, "Basic " + encodedAuth)
+					.header(HttpHeaders.AUTHORIZATION, "Basic " + encodedAuth())
 					.body(Map.of(
 							"paymentKey", paymentKey,
 							"orderId", orderId,
@@ -45,13 +42,10 @@ public class TossPaymentsClient {
 	}
 
 	public Map<String, Object> cancelPayment(String paymentKey, String cancelReason) {
-		String encodedAuth = Base64.getEncoder()
-				.encodeToString((secretKey + ":").getBytes(StandardCharsets.UTF_8));
-
 		try {
 			return tossRestClient.post()
 					.uri("/v1/payments/{paymentKey}/cancel", paymentKey)
-					.header(HttpHeaders.AUTHORIZATION, "Basic " + encodedAuth)
+					.header(HttpHeaders.AUTHORIZATION, "Basic " + encodedAuth())
 					.body(Map.of("cancelReason", cancelReason))
 					.retrieve()
 					.body(Map.class);
@@ -59,5 +53,48 @@ public class TossPaymentsClient {
 			throw new BusinessException(HttpStatus.valueOf(ex.getStatusCode().value()),
 					"결제 취소에 실패했습니다: " + ex.getResponseBodyAsString());
 		}
+	}
+
+	// 구독 카드 등록(빌링 인증) 위젯 완료 후 받은 authKey를 실제 자동결제용 billingKey로 교환한다.
+	public Map<String, Object> issueBillingKey(String authKey, String customerKey) {
+		try {
+			return tossRestClient.post()
+					.uri("/v1/billing/authorizations/issue")
+					.header(HttpHeaders.AUTHORIZATION, "Basic " + encodedAuth())
+					.body(Map.of(
+							"authKey", authKey,
+							"customerKey", customerKey
+					))
+					.retrieve()
+					.body(Map.class);
+		} catch (RestClientResponseException ex) {
+			throw new BusinessException(HttpStatus.valueOf(ex.getStatusCode().value()),
+					"빌링키 발급에 실패했습니다: " + ex.getResponseBodyAsString());
+		}
+	}
+
+	// 등록된 billingKey로 카드 재인증 없이 서버 간 호출만으로 청구한다 (정기결제).
+	public Map<String, Object> chargeBilling(
+			String billingKey, String customerKey, String orderId, String orderName, BigDecimal amount) {
+		try {
+			return tossRestClient.post()
+					.uri("/v1/billing/{billingKey}", billingKey)
+					.header(HttpHeaders.AUTHORIZATION, "Basic " + encodedAuth())
+					.body(Map.of(
+							"customerKey", customerKey,
+							"amount", amount,
+							"orderId", orderId,
+							"orderName", orderName
+					))
+					.retrieve()
+					.body(Map.class);
+		} catch (RestClientResponseException ex) {
+			throw new BusinessException(HttpStatus.valueOf(ex.getStatusCode().value()),
+					"정기결제 청구에 실패했습니다: " + ex.getResponseBodyAsString());
+		}
+	}
+
+	private String encodedAuth() {
+		return Base64.getEncoder().encodeToString((secretKey + ":").getBytes(StandardCharsets.UTF_8));
 	}
 }
