@@ -59,6 +59,7 @@ import com.scaneat.back.repository.EmailVerifyCodeRepository;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -85,6 +86,9 @@ public class BizService {
 	private static final int BIZ_CERT_SIGNED_URL_TTL_SECONDS = 600;
 	private static final int EMAIL_CODE_TTL_MINUTES = 5;
 	private static final String NTS_STT_GRP_CD = "NTS_STT_CD";
+	// 가입 시 상호명을 안 받은 사업자에게 채워두는 placeholder — 실제 값이 아니므로 "미입력"과 동일하게 취급해야 하는 곳(사업자등록증
+	// 인식 값 병합, 구독료 결제 전 필수정보 체크 등)에서 공유해서 쓴다.
+	public static final String PLACEHOLDER_BIZ_NM = "사업장명 미입력";
 
 	private final BizRepository bizRepository;
 	private final SupabaseStorageClient supabaseStorageClient;
@@ -114,6 +118,23 @@ public class BizService {
 		return bizRepository.findById(bizRegNo)
 				.map(BizResponse::from)
 				.orElseThrow(() -> new ResourceNotFoundException("사업자를 찾을 수 없습니다: " + bizRegNo));
+	}
+
+	// 구독료 결제(첫 결제) 전에 상호/대표자/주소가 채워져 있는지 확인할 때 쓴다 — 비어있는 항목의 한글 라벨을 순서대로 돌려준다.
+	public List<String> getMissingBizInfoFields(String bizRegNo) {
+		Biz biz = bizRepository.findById(bizRegNo)
+				.orElseThrow(() -> new ResourceNotFoundException("사업자를 찾을 수 없습니다: " + bizRegNo));
+		List<String> missing = new ArrayList<>();
+		if (biz.getBizNm() == null || biz.getBizNm().isBlank() || PLACEHOLDER_BIZ_NM.equals(biz.getBizNm())) {
+			missing.add("상호");
+		}
+		if (biz.getRepNm() == null || biz.getRepNm().isBlank()) {
+			missing.add("대표자");
+		}
+		if (biz.getAddr() == null || biz.getAddr().isBlank()) {
+			missing.add("주소");
+		}
+		return missing;
 	}
 
 	@Transactional
@@ -196,7 +217,7 @@ public class BizService {
 
 		NtsStatusResult ntsResult = ntsClient.checkStatus(request.bizRegNo());
 		LocalDateTime now = LocalDateTime.now();
-		String bizNm = request.bizNm() != null && !request.bizNm().isBlank() ? request.bizNm().trim() : "사업장명 미입력";
+		String bizNm = request.bizNm() != null && !request.bizNm().isBlank() ? request.bizNm().trim() : PLACEHOLDER_BIZ_NM;
 		// 사업장 이메일을 따로 받지 않으므로, 우선 로그인 아이디(이메일)로 채워두고 필요하면 나중에 바꿀 수 있게 한다.
 		String emailAddr = request.emailAddr() != null && !request.emailAddr().isBlank() ? request.emailAddr().trim() : normalizedAdminId;
 

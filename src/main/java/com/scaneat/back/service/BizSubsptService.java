@@ -76,6 +76,11 @@ public class BizSubsptService {
 			throw new BusinessException("이미 구독 중입니다. 요금제 변경은 요금제 변경 기능을 이용해주세요.");
 		}
 
+		List<String> missingBizFields = bizService.getMissingBizInfoFields(bizRegNo);
+		if (!missingBizFields.isEmpty()) {
+			throw new BusinessException("사업장 정보 메뉴에서 저장 후 가능합니다 (" + String.join(", ", missingBizFields) + ")");
+		}
+
 		Map<String, Object> billingAuth = tossPaymentsClient.issueBillingKey(request.authKey(), request.customerKey());
 		log.info("[Toss] billing key issue raw response: {}", billingAuth);
 		String billingKey = (String) billingAuth.get("billingKey");
