@@ -7,9 +7,11 @@ import com.scaneat.back.dto.subspt.BizSubPlanResponse;
 import com.scaneat.back.dto.subspt.BizSubsptPaymentResponse;
 import com.scaneat.back.dto.subspt.BizSubsptResponse;
 import com.scaneat.back.dto.subspt.BizSubsptStartRequest;
+import com.scaneat.back.entity.AdminRole;
 import com.scaneat.back.entity.BizSubPlan;
 import com.scaneat.back.entity.BizSubspt;
 import com.scaneat.back.entity.BizSubsptPayment;
+import com.scaneat.back.repository.AdminUsrRepository;
 import com.scaneat.back.repository.BizSubPlanRepository;
 import com.scaneat.back.repository.BizSubsptPaymentRepository;
 import com.scaneat.back.repository.BizSubsptRepository;
@@ -39,6 +41,7 @@ public class BizSubsptService {
 	private final BizSubPlanRepository bizSubPlanRepository;
 	private final BizSubsptRepository bizSubsptRepository;
 	private final BizSubsptPaymentRepository bizSubsptPaymentRepository;
+	private final AdminUsrRepository adminUsrRepository;
 
 	public List<BizSubPlanResponse> getPlans() {
 		return bizSubPlanRepository.findByUseYnOrderBySortOrdAsc("Y").stream()
@@ -133,8 +136,20 @@ public class BizSubsptService {
 			subspt.setUpdDt(now);
 		}
 		bizSubsptRepository.save(subspt);
+		promoteProvAdmins(bizRegNo);
 
 		return BizSubsptResponse.from(subspt, plan.getPlanNm());
+	}
+
+	// 구독료 결제가 처음 성공하면(가입 후 승인 대기 상태였더라도) 그 사업장 관리자 계정을 정식 BIZ 권한으로 승격한다.
+	// SUPER의 수동 승인(approveBiz)과 별개 경로 — 둘 중 먼저 되는 쪽에서 승격되면 된다.
+	private void promoteProvAdmins(String bizRegNo) {
+		adminUsrRepository.findByBizRegNoOrderByRegDtAsc(bizRegNo).forEach(admin -> {
+			if (admin.getAdminRole() == AdminRole.PROV_ADMIN) {
+				admin.setAdminRole(AdminRole.BIZ);
+				adminUsrRepository.save(admin);
+			}
+		});
 	}
 
 	@Transactional
