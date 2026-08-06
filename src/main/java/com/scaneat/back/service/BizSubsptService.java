@@ -23,6 +23,7 @@ import java.time.format.DateTimeParseException;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -78,7 +79,8 @@ public class BizSubsptService {
 
 		List<String> missingBizFields = bizService.getMissingBizInfoFields(bizRegNo);
 		if (!missingBizFields.isEmpty()) {
-			throw new BusinessException("사업장 정보 메뉴에서 저장 후 가능합니다 (" + String.join(", ", missingBizFields) + ")");
+			String missingList = missingBizFields.stream().map(f -> "(" + f + ")").collect(Collectors.joining("\n"));
+			throw new BusinessException("사업장 정보 메뉴에서 저장 후 가능합니다\n" + missingList);
 		}
 
 		Map<String, Object> billingAuth = tossPaymentsClient.issueBillingKey(request.authKey(), request.customerKey());
