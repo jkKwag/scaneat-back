@@ -120,7 +120,8 @@ public class BizService {
 				.orElseThrow(() -> new ResourceNotFoundException("사업자를 찾을 수 없습니다: " + bizRegNo));
 	}
 
-	// 구독료 결제(첫 결제) 전에 상호/대표자/주소가 채워져 있는지 확인할 때 쓴다 — 비어있는 항목의 한글 라벨을 순서대로 돌려준다.
+	// 구독료 결제(첫 결제) 전에 상호/대표자/주소/전화번호/핸드폰번호가 채워져 있는지 확인할 때 쓴다 —
+	// 비어있는 항목의 한글 라벨을 순서대로 돌려준다.
 	public List<String> getMissingBizInfoFields(String bizRegNo) {
 		Biz biz = bizRepository.findById(bizRegNo)
 				.orElseThrow(() -> new ResourceNotFoundException("사업자를 찾을 수 없습니다: " + bizRegNo));
@@ -133,6 +134,12 @@ public class BizService {
 		}
 		if (biz.getAddr() == null || biz.getAddr().isBlank()) {
 			missing.add("주소");
+		}
+		if (biz.getTelNo() == null || biz.getTelNo().isBlank()) {
+			missing.add("전화번호");
+		}
+		if (biz.getMobileTel() == null || biz.getMobileTel().isBlank()) {
+			missing.add("핸드폰번호");
 		}
 		return missing;
 	}
