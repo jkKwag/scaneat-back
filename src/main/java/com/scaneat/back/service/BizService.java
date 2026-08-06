@@ -196,10 +196,11 @@ public class BizService {
 
 		NtsStatusResult ntsResult = ntsClient.checkStatus(request.bizRegNo());
 		LocalDateTime now = LocalDateTime.now();
+		String bizNm = request.bizNm() != null && !request.bizNm().isBlank() ? request.bizNm().trim() : "사업장명 미입력";
 
 		Biz biz = Biz.builder()
 				.bizRegNo(request.bizRegNo())
-				.bizNm(request.bizNm())
+				.bizNm(bizNm)
 				.repNm(request.repNm())
 				.bizStatus("O")
 				.telNo(request.telNo())
