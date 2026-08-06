@@ -40,6 +40,8 @@ import com.scaneat.back.entity.BizCat;
 import com.scaneat.back.entity.BizHourStd;
 import com.scaneat.back.entity.BizHourStdId;
 import com.scaneat.back.entity.BizMenu;
+import com.scaneat.back.entity.BizMenuOptCd;
+import com.scaneat.back.entity.BizMenuOptGrp;
 import com.scaneat.back.entity.BizRsvnStd;
 import com.scaneat.back.entity.BizSeat;
 import com.scaneat.back.entity.BizSeatId;
@@ -50,6 +52,8 @@ import com.scaneat.back.repository.AdminUsrRepository;
 import com.scaneat.back.repository.BizCatRepository;
 import com.scaneat.back.repository.BizEmpRepository;
 import com.scaneat.back.repository.BizHourStdRepository;
+import com.scaneat.back.repository.BizMenuOptCdRepository;
+import com.scaneat.back.repository.BizMenuOptGrpRepository;
 import com.scaneat.back.repository.BizMenuRepository;
 import com.scaneat.back.repository.BizRepository;
 import com.scaneat.back.repository.BizRsvnStdRepository;
@@ -97,6 +101,8 @@ public class BizService {
 	private final CmmCdRepository cmmCdRepository;
 	private final BizCatRepository bizCatRepository;
 	private final BizMenuRepository bizMenuRepository;
+	private final BizMenuOptGrpRepository bizMenuOptGrpRepository;
+	private final BizMenuOptCdRepository bizMenuOptCdRepository;
 	private final BizHourStdRepository bizHourStdRepository;
 	private final BizRsvnStdRepository bizRsvnStdRepository;
 	private final BizSeatRepository bizSeatRepository;
@@ -684,7 +690,27 @@ public class BizService {
 		return seatCd;
 	}
 
-	// 구독료 최초 결제가 완료된 사업자에게 카테고리/메뉴/좌석/영업시간/예약기준을 템플릿 사업자(TEMPLATE_BIZ_REG_NO)에서
+	private String generateOptGrpCd() {
+		String code;
+		int attempts = 0;
+		do {
+			code = "OG" + String.format("%06d", ThreadLocalRandom.current().nextInt(1_000_000));
+			attempts++;
+		} while (bizMenuOptGrpRepository.existsById(code) && attempts < 5);
+		return code;
+	}
+
+	private String generateOptCd() {
+		String code;
+		int attempts = 0;
+		do {
+			code = "OC" + String.format("%06d", ThreadLocalRandom.current().nextInt(1_000_000));
+			attempts++;
+		} while (bizMenuOptCdRepository.existsById(code) && attempts < 5);
+		return code;
+	}
+
+	// 구독료 최초 결제가 완료된 사업자에게 카테고리/메뉴(옵션 포함)/좌석/영업시간/예약기준을 템플릿 사업자(TEMPLATE_BIZ_REG_NO)에서
 	// 그대로 복사해 넣어준다. 이미 카테고리가 하나라도 있으면(과거에 시딩됐거나 직접 입력한 경우) 건너뛴다.
 	private static final String TEMPLATE_BIZ_REG_NO = "2122544531";
 
@@ -716,6 +742,7 @@ public class BizService {
 			catCdMap.put(src.getBizCatCd(), copy.getBizCatCd());
 		}
 
+		Map<String, String> menuCdMap = new HashMap<>();
 		for (BizMenu src : bizMenuRepository.findByBizRegNoOrderBySortOrdAsc(TEMPLATE_BIZ_REG_NO)) {
 			String newCatCd = catCdMap.get(src.getBizCatCd());
 			if (newCatCd == null) {
@@ -734,7 +761,56 @@ public class BizService {
 					.useYn(src.getUseYn())
 					.build();
 			bizMenuRepository.save(copy);
+			menuCdMap.put(src.getMenuCd(), copy.getMenuCd());
 		}
+
+		// 메뉴별 옵션 그룹/옵션도 그대로 복사한다 — opt_grp는 메뉴 전용 개념이라(다른 메뉴와 공유되지 않음)
+		// 그룹째로 새 코드를 발급해 복제하고, 그 안의 옵션들도 새 메뉴코드/새 그룹코드로 다시 연결한다.
+		menuCdMap.forEach((oldMenuCd, newMenuCd) -> {
+			Map<String, String> optGrpCdMap = new HashMap<>();
+			List<BizMenuOptCd> optCodes = new ArrayList<>();
+			for (BizMenuOptCd src : bizMenuOptCdRepository.findByMenuCd(oldMenuCd)) {
+				String newOptGrpCd = optGrpCdMap.computeIfAbsent(src.getOptGrpCd(), oldGrpCd -> {
+					BizMenuOptGrp srcGrp = bizMenuOptGrpRepository.findById(oldGrpCd).orElse(null);
+					if (srcGrp == null) {
+						return null;
+					}
+					BizMenuOptGrp grpCopy = BizMenuOptGrp.builder()
+							.optGrpCd(generateOptGrpCd())
+							.optGrpNm(srcGrp.getOptGrpNm())
+							.optType(srcGrp.getOptType())
+							.requiredYn(srcGrp.getRequiredYn())
+							.sortOrd(srcGrp.getSortOrd())
+							.useYn(srcGrp.getUseYn())
+							.rmrk(srcGrp.getRmrk())
+							.minSelCnt(srcGrp.getMinSelCnt())
+							.maxSelCnt(srcGrp.getMaxSelCnt())
+							.regUsrId("system")
+							.regDt(now)
+							.build();
+					bizMenuOptGrpRepository.save(grpCopy);
+					return grpCopy.getOptGrpCd();
+				});
+				if (newOptGrpCd == null) {
+					continue;
+				}
+				optCodes.add(BizMenuOptCd.builder()
+						.optCd(generateOptCd())
+						.optGrpCd(newOptGrpCd)
+						.menuCd(newMenuCd)
+						.optNm(src.getOptNm())
+						.addPrice(src.getAddPrice())
+						.sortOrd(src.getSortOrd())
+						.useYn(src.getUseYn())
+						.rmrk(src.getRmrk())
+						.regUsrId("system")
+						.regDt(now)
+						.build());
+			}
+			if (!optCodes.isEmpty()) {
+				bizMenuOptCdRepository.saveAll(optCodes);
+			}
+		});
 
 		for (BizSeat src : bizSeatRepository.findById_BizRegNoOrderBySortOrdAsc(TEMPLATE_BIZ_REG_NO)) {
 			BizSeat copy = BizSeat.builder()
