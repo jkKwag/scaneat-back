@@ -19,6 +19,7 @@ import com.scaneat.back.dto.biz.BizHourRequest;
 import com.scaneat.back.dto.biz.BizHourResponse;
 import com.scaneat.back.dto.biz.BizMenuRequest;
 import com.scaneat.back.dto.biz.BizMenuResponse;
+import com.scaneat.back.dto.biz.BizNtsStatusResponse;
 import com.scaneat.back.dto.biz.BizPageResponse;
 import com.scaneat.back.dto.biz.BizResponse;
 import com.scaneat.back.dto.biz.BizRsvnStdRequest;
@@ -95,6 +96,12 @@ public class BizController {
 	@GetMapping("/{bizno}/registration-cert")
 	public ApiResponse<String> getRegistrationCertUrl(@PathVariable String bizno) {
 		return ApiResponse.ok(bizService.getRegistrationCertUrl(bizno));
+	}
+
+	// 사업자등록증 업로드 직후 등 필요할 때 국세청 상태조회(계속사업자/휴업자/폐업자)를 재확인
+	@PostMapping("/{bizno}/nts-status")
+	public ApiResponse<BizNtsStatusResponse> checkNtsStatus(@PathVariable String bizno) {
+		return ApiResponse.ok(bizService.checkNtsStatus(bizno));
 	}
 
 	// 업로드 완료 후 프론트가 이어서 호출 — 업로드 응답과 분리해서 인식이 오래 걸려도 업로드 자체엔 영향 없게 한다.
