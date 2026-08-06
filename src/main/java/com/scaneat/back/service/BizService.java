@@ -197,6 +197,8 @@ public class BizService {
 		NtsStatusResult ntsResult = ntsClient.checkStatus(request.bizRegNo());
 		LocalDateTime now = LocalDateTime.now();
 		String bizNm = request.bizNm() != null && !request.bizNm().isBlank() ? request.bizNm().trim() : "사업장명 미입력";
+		// 사업장 이메일을 따로 받지 않으므로, 우선 로그인 아이디(이메일)로 채워두고 필요하면 나중에 바꿀 수 있게 한다.
+		String emailAddr = request.emailAddr() != null && !request.emailAddr().isBlank() ? request.emailAddr().trim() : normalizedAdminId;
 
 		Biz biz = Biz.builder()
 				.bizRegNo(request.bizRegNo())
@@ -205,7 +207,7 @@ public class BizService {
 				.bizStatus("O")
 				.telNo(request.telNo())
 				.mobileTel(request.mobileTel())
-				.emailAddr(request.emailAddr())
+				.emailAddr(emailAddr)
 				.indCd(request.indCd())
 				.addr(request.addr())
 				.addrDtl(request.addrDtl())
