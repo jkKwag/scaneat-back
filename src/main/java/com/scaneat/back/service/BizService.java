@@ -59,7 +59,9 @@ import com.scaneat.back.repository.EmailVerifyCodeRepository;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -649,5 +651,106 @@ public class BizService {
 			attempts++;
 		} while (bizSeatRepository.existsById(new BizSeatId(bizRegNo, seatCd)) && attempts < 5);
 		return seatCd;
+	}
+
+	// 구독료 최초 결제가 완료된 사업자에게 카테고리/메뉴/좌석/영업시간/예약기준을 템플릿 사업자(TEMPLATE_BIZ_REG_NO)에서
+	// 그대로 복사해 넣어준다. 이미 카테고리가 하나라도 있으면(과거에 시딩됐거나 직접 입력한 경우) 건너뛴다.
+	private static final String TEMPLATE_BIZ_REG_NO = "2122544531";
+
+	@Transactional
+	public void seedFromTemplate(String bizRegNo) {
+		if (bizRegNo == null || bizRegNo.equals(TEMPLATE_BIZ_REG_NO)) {
+			return;
+		}
+		if (!bizCatRepository.findByBizRegNoOrderBySortOrdAsc(bizRegNo).isEmpty()) {
+			return;
+		}
+
+		LocalDateTime now = LocalDateTime.now();
+
+		Map<String, String> catCdMap = new HashMap<>();
+		for (BizCat src : bizCatRepository.findByBizRegNoOrderBySortOrdAsc(TEMPLATE_BIZ_REG_NO)) {
+			BizCat copy = BizCat.builder()
+					.bizCatCd(generateBizCatCd())
+					.bizRegNo(bizRegNo)
+					.catCd(src.getCatCd())
+					.bizCatNm(src.getBizCatNm())
+					.sortOrd(src.getSortOrd())
+					.useYn(src.getUseYn())
+					.rmrk(src.getRmrk())
+					.regUsrId("system")
+					.regDt(now)
+					.build();
+			bizCatRepository.save(copy);
+			catCdMap.put(src.getBizCatCd(), copy.getBizCatCd());
+		}
+
+		for (BizMenu src : bizMenuRepository.findByBizRegNoOrderBySortOrdAsc(TEMPLATE_BIZ_REG_NO)) {
+			String newCatCd = catCdMap.get(src.getBizCatCd());
+			if (newCatCd == null) {
+				continue;
+			}
+			BizMenu copy = BizMenu.builder()
+					.menuCd(generateMenuCd())
+					.bizRegNo(bizRegNo)
+					.bizCatCd(newCatCd)
+					.menuNm(src.getMenuNm())
+					.menuDesc(src.getMenuDesc())
+					.price(src.getPrice())
+					.imgUrl(src.getImgUrl())
+					.badge(src.getBadge())
+					.sortOrd(src.getSortOrd())
+					.useYn(src.getUseYn())
+					.build();
+			bizMenuRepository.save(copy);
+		}
+
+		for (BizSeat src : bizSeatRepository.findById_BizRegNoOrderBySortOrdAsc(TEMPLATE_BIZ_REG_NO)) {
+			BizSeat copy = BizSeat.builder()
+					.id(new BizSeatId(bizRegNo, generateSeatCd(bizRegNo)))
+					.seatNm(src.getSeatNm())
+					.capacity(src.getCapacity())
+					.seatDesc(src.getSeatDesc())
+					.imgUrl(src.getImgUrl())
+					.sortOrd(src.getSortOrd())
+					.useYn(src.getUseYn())
+					.regUsrId("system")
+					.regDt(now)
+					.build();
+			bizSeatRepository.save(copy);
+		}
+
+		List<BizHourStd> hourCopies = bizHourStdRepository.findById_BizRegNo(TEMPLATE_BIZ_REG_NO).stream()
+				.map(src -> BizHourStd.builder()
+						.id(new BizHourStdId(bizRegNo, src.getId().getDayOfWeek()))
+						.openTime(src.getOpenTime())
+						.closeTime(src.getCloseTime())
+						.isClosed(src.getIsClosed())
+						.breakStartTime(src.getBreakStartTime())
+						.breakEndTime(src.getBreakEndTime())
+						.lastOrderTime(src.getLastOrderTime())
+						.regUsrId("system")
+						.regDt(now)
+						.build())
+				.toList();
+		if (!hourCopies.isEmpty()) {
+			bizHourStdRepository.saveAll(hourCopies);
+		}
+
+		bizRsvnStdRepository.findById(TEMPLATE_BIZ_REG_NO).ifPresent(src -> {
+			BizRsvnStd copy = BizRsvnStd.builder()
+					.bizRegNo(bizRegNo)
+					.useYn(src.getUseYn())
+					.timeUnitMin(src.getTimeUnitMin())
+					.useTimeMin(src.getUseTimeMin())
+					.minPartySize(src.getMinPartySize())
+					.maxPartySize(src.getMaxPartySize())
+					.maxAdvanceDays(src.getMaxAdvanceDays())
+					.minAdvanceHours(src.getMinAdvanceHours())
+					.regUsrId("system")
+					.regDt(now)
+					.build();
+			bizRsvnStdRepository.save(copy);
+		});
 	}
 }
