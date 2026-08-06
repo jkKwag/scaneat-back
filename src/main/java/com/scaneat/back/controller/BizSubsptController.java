@@ -4,6 +4,7 @@ import com.scaneat.back.common.ApiResponse;
 import com.scaneat.back.common.security.CurrentAdmin;
 import com.scaneat.back.dto.subspt.BizSubPlanResponse;
 import com.scaneat.back.dto.subspt.BizSubsptPaymentResponse;
+import com.scaneat.back.dto.subspt.BizSubsptPlanChangeRequest;
 import com.scaneat.back.dto.subspt.BizSubsptResponse;
 import com.scaneat.back.dto.subspt.BizSubsptStartRequest;
 import com.scaneat.back.service.BizSubsptService;
@@ -41,6 +42,13 @@ public class BizSubsptController {
 	public ApiResponse<BizSubsptResponse> startSubscription(
 			@PathVariable String bizno, @Valid @RequestBody BizSubsptStartRequest request, HttpServletRequest httpRequest) {
 		return ApiResponse.ok(bizSubsptService.startSubscription(bizno, request, currentAdmin(httpRequest).adminId()));
+	}
+
+	// 이미 구독 중인 사업장의 요금제 변경 예약 — 카드 재등록/즉시 결제 없이 다음 결제일부터 적용된다.
+	@PutMapping("/{bizno}/subscription/plan")
+	public ApiResponse<BizSubsptResponse> schedulePlanChange(
+			@PathVariable String bizno, @Valid @RequestBody BizSubsptPlanChangeRequest request, HttpServletRequest httpRequest) {
+		return ApiResponse.ok(bizSubsptService.schedulePlanChange(bizno, request.planCd(), currentAdmin(httpRequest).adminId()));
 	}
 
 	@PutMapping("/{bizno}/subscription/cancel")

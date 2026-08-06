@@ -52,7 +52,7 @@ public class BizSubsptService {
 	// 구독 시작 전이면 null — "아직 구독 안 함"은 에러가 아니라 정상 상태라 404를 던지지 않는다.
 	public BizSubsptResponse getSubscription(String bizRegNo) {
 		return bizSubsptRepository.findById(bizRegNo)
-				.map(subspt -> BizSubsptResponse.from(subspt, planNameOf(subspt.getPlanCd())))
+				.map(this::toResponse)
 				.orElse(null);
 	}
 
@@ -63,16 +63,16 @@ public class BizSubsptService {
 	}
 
 	// 카드 등록(빌링 인증) 위젯 완료 → billingKey 발급 → 첫 달 구독료 즉시 청구 → 구독 현황/결제내역 저장.
-	// 요금제를 올리거나 낮출 때도 이 메서드를 그대로 써서 즉시 1회 청구 + 현황 갱신한다.
+	// 최초 가입 또는 해지 후 재가입 전용. 이미 ACTIVE로 구독 중일 때 요금제만 바꾸는 경우는
+	// schedulePlanChange()로 처리한다 (일할 정산/환불 없이 다음 결제일부터 새 요금제 적용).
 	@Transactional
 	public BizSubsptResponse startSubscription(String bizRegNo, BizSubsptStartRequest request, String actorId) {
 		BizSubPlan plan = bizSubPlanRepository.findById(request.planCd())
 				.orElseThrow(() -> new ResourceNotFoundException("요금제를 찾을 수 없습니다: " + request.planCd()));
 
 		BizSubspt existingSubspt = bizSubsptRepository.findById(bizRegNo).orElse(null);
-		if (existingSubspt != null && "ACTIVE".equals(existingSubspt.getStatus())
-				&& existingSubspt.getPlanCd().equals(plan.getPlanCd())) {
-			throw new BusinessException("이미 해당 요금제를 구독 중입니다.");
+		if (existingSubspt != null && "ACTIVE".equals(existingSubspt.getStatus())) {
+			throw new BusinessException("이미 구독 중입니다. 요금제 변경은 요금제 변경 기능을 이용해주세요.");
 		}
 
 		Map<String, Object> billingAuth = tossPaymentsClient.issueBillingKey(request.authKey(), request.customerKey());
@@ -137,6 +137,7 @@ public class BizSubsptService {
 			subspt.setBillingKey(billingKey);
 			subspt.setNextBillingDt(nextBillingDt);
 			subspt.setStatus("ACTIVE");
+			subspt.setPendingPlanCd(null);
 			subspt.setCanceledDt(null);
 			subspt.setUpdUsrId(actorId);
 			subspt.setUpdDt(now);
@@ -144,7 +145,26 @@ public class BizSubsptService {
 		bizSubsptRepository.save(subspt);
 		promoteProvAdmins(bizRegNo);
 
-		return BizSubsptResponse.from(subspt, plan.getPlanNm());
+		return toResponse(subspt);
+	}
+
+	// 이미 ACTIVE인 구독의 요금제만 바꿀 때 쓴다. 일할 정산/환불 없이 예약만 해두고, 다음 결제일 배치에서
+	// pendingPlanCd로 plan_cd를 갈아끼우면서 그 금액으로 정상 청구한다. 현재 요금제로 되돌리면(=예약 취소) pendingPlanCd를 비운다.
+	@Transactional
+	public BizSubsptResponse schedulePlanChange(String bizRegNo, String planCd, String actorId) {
+		BizSubspt subspt = bizSubsptRepository.findById(bizRegNo)
+				.filter(s -> "ACTIVE".equals(s.getStatus()))
+				.orElseThrow(() -> new BusinessException("현재 이용 중인 구독이 없습니다."));
+
+		BizSubPlan plan = bizSubPlanRepository.findById(planCd)
+				.orElseThrow(() -> new ResourceNotFoundException("요금제를 찾을 수 없습니다: " + planCd));
+
+		subspt.setPendingPlanCd(plan.getPlanCd().equals(subspt.getPlanCd()) ? null : plan.getPlanCd());
+		subspt.setUpdUsrId(actorId);
+		subspt.setUpdDt(LocalDateTime.now());
+		bizSubsptRepository.save(subspt);
+
+		return toResponse(subspt);
 	}
 
 	// 구독료 결제가 처음 성공하면(가입 후 승인 대기 상태였더라도) 그 사업장 관리자 계정을 정식 BIZ 권한으로 승격한다.
@@ -165,9 +185,15 @@ public class BizSubsptService {
 		LocalDateTime now = LocalDateTime.now();
 		subspt.setStatus("CANCELED");
 		subspt.setCanceledDt(now);
+		subspt.setPendingPlanCd(null);
 		subspt.setUpdUsrId(actorId);
 		subspt.setUpdDt(now);
 		bizSubsptRepository.save(subspt);
+	}
+
+	private BizSubsptResponse toResponse(BizSubspt subspt) {
+		String pendingPlanNm = subspt.getPendingPlanCd() == null ? null : planNameOf(subspt.getPendingPlanCd());
+		return BizSubsptResponse.from(subspt, planNameOf(subspt.getPlanCd()), pendingPlanNm);
 	}
 
 	private String planNameOf(String planCd) {

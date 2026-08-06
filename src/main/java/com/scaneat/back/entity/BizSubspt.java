@@ -47,6 +47,10 @@ public class BizSubspt {
 	@Column(name = "next_billing_dt")
 	private LocalDate nextBillingDt;
 
+	// 요금제 변경을 예약만 해둔 상태 — 당장 청구/환불 없이 다음 결제일에 배치가 이 값으로 plan_cd를 갈아끼우고 청구한다.
+	@Column(name = "pending_plan_cd", length = 20)
+	private String pendingPlanCd;
+
 	@ColumnDefault("'ACTIVE'")
 	@Column(name = "status", length = 20, nullable = false)
 	private String status;
