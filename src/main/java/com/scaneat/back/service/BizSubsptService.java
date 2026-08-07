@@ -86,36 +86,63 @@ public class BizSubsptService {
 			throw new BusinessException("사업장 정보 메뉴에서 저장 후 가능합니다\n" + missingList);
 		}
 
-		Map<String, Object> billingAuth = tossPaymentsClient.issueBillingKey(request.authKey(), request.customerKey());
-		log.info("[Toss] billing key issue raw response: {}", billingAuth);
-		String billingKey = (String) billingAuth.get("billingKey");
-		if (billingKey == null || billingKey.isBlank()) {
-			throw new BusinessException("빌링키 발급에 실패했습니다.");
-		}
-
 		LocalDateTime now = LocalDateTime.now();
 		LocalDate today = now.toLocalDate();
 		BigDecimal totalAmount = plan.getSuppliedAmount().add(plan.getVat());
 		String billingPeriod = today.format(BILLING_PERIOD_FMT);
-		String orderId = "subspt-" + bizRegNo + "-" + billingPeriod + "-" + System.currentTimeMillis();
+		// 이벤트성 무료 요금제(0원)는 카드 등록/청구 없이 바로 ACTIVE 처리 — 그 외엔 기존과 동일하게 토스로 실제 청구한다.
+		boolean isFreePlan = totalAmount.compareTo(BigDecimal.ZERO) == 0;
 
-		Map<String, Object> chargeResult = tossPaymentsClient.chargeBilling(
-				billingKey, request.customerKey(), orderId, plan.getPlanNm() + " 구독료", totalAmount);
-		log.info("[Toss] billing charge raw response: {}", chargeResult);
+		String billingKey = null;
+		String paymentKey;
+		String status;
+		BigDecimal paymentSuppliedAmount = plan.getSuppliedAmount();
+		BigDecimal paymentVat = plan.getVat();
+		LocalDateTime requestedDt = now;
+		LocalDateTime approvedDt = now;
+		String receiptUrl = null;
 
-		String status = (String) chargeResult.get("status");
+		if (isFreePlan) {
+			paymentKey = "free-" + bizRegNo + "-" + billingPeriod + "-" + System.currentTimeMillis();
+			status = "DONE";
+		} else {
+			if (request.authKey() == null || request.authKey().isBlank()
+					|| request.customerKey() == null || request.customerKey().isBlank()) {
+				throw new BusinessException("결제 인증 정보가 없습니다.");
+			}
+			Map<String, Object> billingAuth = tossPaymentsClient.issueBillingKey(request.authKey(), request.customerKey());
+			log.info("[Toss] billing key issue raw response: {}", billingAuth);
+			billingKey = (String) billingAuth.get("billingKey");
+			if (billingKey == null || billingKey.isBlank()) {
+				throw new BusinessException("빌링키 발급에 실패했습니다.");
+			}
+
+			String orderId = "subspt-" + bizRegNo + "-" + billingPeriod + "-" + System.currentTimeMillis();
+			Map<String, Object> chargeResult = tossPaymentsClient.chargeBilling(
+					billingKey, request.customerKey(), orderId, plan.getPlanNm() + " 구독료", totalAmount);
+			log.info("[Toss] billing charge raw response: {}", chargeResult);
+
+			status = (String) chargeResult.get("status");
+			paymentKey = (String) chargeResult.get("paymentKey");
+			paymentSuppliedAmount = toBigDecimal(chargeResult.get("suppliedAmount"));
+			paymentVat = toBigDecimal(chargeResult.get("vat"));
+			requestedDt = parseTossDateTime((String) chargeResult.get("requestedAt"));
+			approvedDt = parseTossDateTime((String) chargeResult.get("approvedAt"));
+			receiptUrl = extractReceiptUrl(chargeResult);
+		}
+
 		BizSubsptPayment payment = BizSubsptPayment.builder()
-				.paymentKey((String) chargeResult.get("paymentKey"))
+				.paymentKey(paymentKey)
 				.bizRegNo(bizRegNo)
 				.planCd(plan.getPlanCd())
 				.billingKey(billingKey)
 				.billingPeriod(billingPeriod)
-				.suppliedAmount(toBigDecimal(chargeResult.get("suppliedAmount")))
-				.vat(toBigDecimal(chargeResult.get("vat")))
+				.suppliedAmount(paymentSuppliedAmount)
+				.vat(paymentVat)
 				.status(status)
-				.requestedDt(parseTossDateTime((String) chargeResult.get("requestedAt")))
-				.approvedDt(parseTossDateTime((String) chargeResult.get("approvedAt")))
-				.receiptUrl(extractReceiptUrl(chargeResult))
+				.requestedDt(requestedDt)
+				.approvedDt(approvedDt)
+				.receiptUrl(receiptUrl)
 				.regUsrId(actorId)
 				.regDt(now)
 				.build();
@@ -145,7 +172,10 @@ public class BizSubsptService {
 			subspt.setPlanCd(plan.getPlanCd());
 			subspt.setSuppliedAmount(plan.getSuppliedAmount());
 			subspt.setVat(plan.getVat());
-			subspt.setBillingKey(billingKey);
+			// 무료 요금제로 갈아탈 땐 새 billingKey가 없으므로, 이전에 등록해둔 카드가 있으면 그대로 둔다.
+			if (billingKey != null) {
+				subspt.setBillingKey(billingKey);
+			}
 			subspt.setNextBillingDt(nextBillingDt);
 			subspt.setStatus("ACTIVE");
 			subspt.setPendingPlanCd(null);
