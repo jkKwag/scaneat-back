@@ -13,6 +13,7 @@ import com.scaneat.back.dto.biz.BizRejectRequest;
 import com.scaneat.back.dto.biz.BizSignupRequest;
 import com.scaneat.back.dto.biz.BizSignupResponse;
 import com.scaneat.back.dto.biz.BizUpdateRequest;
+import com.scaneat.back.dto.biz.BizWipeResponse;
 import com.scaneat.back.dto.biz.EmailCodeSendRequest;
 import com.scaneat.back.dto.biz.EmailCodeVerifyRequest;
 import com.scaneat.back.dto.biz.BizHourRequest;
@@ -28,6 +29,7 @@ import com.scaneat.back.dto.biz.BizSeatRequest;
 import com.scaneat.back.dto.biz.BizSeatResponse;
 import com.scaneat.back.dto.biz.ImageUploadResponse;
 import com.scaneat.back.service.BizService;
+import com.scaneat.back.service.BizWipeService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -50,6 +52,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class BizController {
 
 	private final BizService bizService;
+	private final BizWipeService bizWipeService;
 
 	@GetMapping
 	public ApiResponse<BizPageResponse> getBizPage(
@@ -127,6 +130,13 @@ public class BizController {
 			@PathVariable String bizno, @Valid @RequestBody BizRejectRequest request, HttpServletRequest httpRequest) {
 		bizService.rejectBiz(bizno, request, currentAdmin(httpRequest));
 		return ApiResponse.ok(null);
+	}
+
+	// 테스트용 — 가입~구독료 결제 흐름을 같은 사업자번호로 반복 검증하기 위해 해당 사업자의 모든 데이터를 지운다.
+	// 본인 사업장이거나 SUPER만 호출 가능 (BizWipeService에서 확인).
+	@DeleteMapping("/{bizno}/wipe-all-data")
+	public ApiResponse<BizWipeResponse> wipeAllData(@PathVariable String bizno, HttpServletRequest httpRequest) {
+		return ApiResponse.ok(bizWipeService.wipeAllData(bizno, currentAdmin(httpRequest)));
 	}
 
 	@PutMapping("/{bizno}")
