@@ -82,7 +82,7 @@ public class BizSubsptService {
 
 		List<String> missingBizFields = bizService.getMissingBizInfoFields(bizRegNo);
 		if (!missingBizFields.isEmpty()) {
-			String missingList = missingBizFields.stream().map(f -> "(" + f + ")").collect(Collectors.joining("\n"));
+			String missingList = missingBizFields.stream().map(f -> "(" + f + ")").collect(Collectors.joining(", "));
 			throw new BusinessException("사업장 정보 메뉴에서 저장 후 가능합니다\n" + missingList);
 		}
 
