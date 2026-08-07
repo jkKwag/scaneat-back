@@ -9,6 +9,8 @@ public interface UsrPrvCnsRepository extends JpaRepository<UsrPrvCns, Long> {
 
 	List<UsrPrvCns> findByUuidOrderByConsentAtDesc(String uuid);
 
+	List<UsrPrvCns> findByBizRegNo(String bizRegNo);
+
 	Optional<UsrPrvCns> findFirstByUuidAndBizRegNoOrderByConsentAtDesc(String uuid, String bizRegNo);
 
 	boolean existsByUuidAndBizRegNo(String uuid, String bizRegNo);
