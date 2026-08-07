@@ -3,6 +3,7 @@ package com.scaneat.back.controller;
 import com.scaneat.back.common.ApiResponse;
 import com.scaneat.back.common.security.CurrentAdmin;
 import com.scaneat.back.dto.subspt.BizSubPlanResponse;
+import com.scaneat.back.dto.subspt.BizSubsptCancelResponse;
 import com.scaneat.back.dto.subspt.BizSubsptPaymentResponse;
 import com.scaneat.back.dto.subspt.BizSubsptPlanChangeRequest;
 import com.scaneat.back.dto.subspt.BizSubsptResponse;
@@ -52,9 +53,8 @@ public class BizSubsptController {
 	}
 
 	@PutMapping("/{bizno}/subscription/cancel")
-	public ApiResponse<Void> cancelSubscription(@PathVariable String bizno, HttpServletRequest httpRequest) {
-		bizSubsptService.cancelSubscription(bizno, currentAdmin(httpRequest).adminId());
-		return ApiResponse.ok(null);
+	public ApiResponse<BizSubsptCancelResponse> cancelSubscription(@PathVariable String bizno, HttpServletRequest httpRequest) {
+		return ApiResponse.ok(bizSubsptService.cancelSubscription(bizno, currentAdmin(httpRequest).adminId()));
 	}
 
 	@GetMapping("/{bizno}/subscription/payments")

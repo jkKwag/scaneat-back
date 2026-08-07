@@ -4,6 +4,7 @@ import com.scaneat.back.client.TossPaymentsClient;
 import com.scaneat.back.common.exception.BusinessException;
 import com.scaneat.back.common.exception.ResourceNotFoundException;
 import com.scaneat.back.dto.subspt.BizSubPlanResponse;
+import com.scaneat.back.dto.subspt.BizSubsptCancelResponse;
 import com.scaneat.back.dto.subspt.BizSubsptPaymentResponse;
 import com.scaneat.back.dto.subspt.BizSubsptResponse;
 import com.scaneat.back.dto.subspt.BizSubsptStartRequest;
@@ -16,11 +17,13 @@ import com.scaneat.back.repository.BizSubPlanRepository;
 import com.scaneat.back.repository.BizSubsptPaymentRepository;
 import com.scaneat.back.repository.BizSubsptRepository;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -189,17 +192,60 @@ public class BizSubsptService {
 		});
 	}
 
+	// 해지 시 이번 결제 주기의 미사용 기간을 일할계산해서 토스 부분취소로 환불한다. 환불이 실패해도(네트워크 오류 등)
+	// 해지 자체는 항상 진행하고, 실패 사유만 결제내역에 남겨서 나중에 수동으로 처리할 수 있게 한다.
 	@Transactional
-	public void cancelSubscription(String bizRegNo, String actorId) {
+	public BizSubsptCancelResponse cancelSubscription(String bizRegNo, String actorId) {
 		BizSubspt subspt = bizSubsptRepository.findById(bizRegNo)
 				.orElseThrow(() -> new ResourceNotFoundException("구독 정보를 찾을 수 없습니다: " + bizRegNo));
 		LocalDateTime now = LocalDateTime.now();
+		LocalDate today = now.toLocalDate();
+
+		BigDecimal refundAmount = BigDecimal.ZERO;
+		boolean refundSucceeded = false;
+		String refundFailReason = null;
+
+		BizSubsptPayment lastPayment = bizSubsptPaymentRepository.findByBizRegNoOrderByRegDtDesc(bizRegNo).stream()
+				.filter(p -> "DONE".equals(p.getStatus()))
+				.findFirst()
+				.orElse(null);
+
+		if (lastPayment != null && subspt.getNextBillingDt() != null) {
+			LocalDate cycleStart = subspt.getNextBillingDt().minusMonths(1);
+			LocalDate cycleEnd = subspt.getNextBillingDt();
+			long totalDays = ChronoUnit.DAYS.between(cycleStart, cycleEnd);
+			long remainingDays = ChronoUnit.DAYS.between(today, cycleEnd);
+			if (totalDays > 0 && remainingDays > 0) {
+				BigDecimal totalAmount = lastPayment.getSuppliedAmount().add(lastPayment.getVat());
+				refundAmount = totalAmount
+						.multiply(BigDecimal.valueOf(remainingDays))
+						.divide(BigDecimal.valueOf(totalDays), 0, RoundingMode.DOWN);
+			}
+		}
+
+		if (refundAmount.compareTo(BigDecimal.ZERO) > 0) {
+			try {
+				tossPaymentsClient.cancelPaymentPartial(lastPayment.getPaymentKey(), "구독 해지 - 미사용 기간 환불", refundAmount);
+				lastPayment.setRefundAmount(refundAmount);
+				lastPayment.setRefundedDt(now);
+				refundSucceeded = true;
+			} catch (BusinessException ex) {
+				refundFailReason = ex.getMessage();
+				lastPayment.setRefundFailReason(refundFailReason);
+				log.error("[구독 해지] 환불 처리 실패 bizRegNo={} paymentKey={} reason={}",
+						bizRegNo, lastPayment.getPaymentKey(), refundFailReason);
+			}
+			bizSubsptPaymentRepository.save(lastPayment);
+		}
+
 		subspt.setStatus("CANCELED");
 		subspt.setCanceledDt(now);
 		subspt.setPendingPlanCd(null);
 		subspt.setUpdUsrId(actorId);
 		subspt.setUpdDt(now);
 		bizSubsptRepository.save(subspt);
+
+		return new BizSubsptCancelResponse(refundAmount, refundSucceeded, refundFailReason);
 	}
 
 	private BizSubsptResponse toResponse(BizSubspt subspt) {
