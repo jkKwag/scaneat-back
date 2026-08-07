@@ -37,7 +37,8 @@ public class Qna {
 	@Column(name = "biz_reg_no", length = 20)
 	private String bizRegNo;
 
-	@Column(name = "is_public", nullable = false)
+	// biz_reg_no와 같은 이유로 nullable로 둔다 — 기존 행이 있는 테이블에 NOT NULL 컬럼을 기본값 없이 추가하는 ALTER는 Postgres가 거부한다.
+	@Column(name = "is_public")
 	private Boolean isPublic;
 
 	@Column(name = "created_at", nullable = false)
