@@ -24,7 +24,6 @@ import com.scaneat.back.repository.BizSeatRepository;
 import com.scaneat.back.repository.BizSubsptPaymentRepository;
 import com.scaneat.back.repository.BizSubsptRepository;
 import com.scaneat.back.repository.EmailVerifyCodeRepository;
-import com.scaneat.back.repository.QnaRepository;
 import com.scaneat.back.repository.UsrChatMsgRepository;
 import com.scaneat.back.repository.UsrOrderItemOptRepository;
 import com.scaneat.back.repository.UsrOrderItemRepository;
@@ -73,7 +72,6 @@ public class BizWipeService {
 	private final UsrChatMsgRepository usrChatMsgRepository;
 	private final UsrScanLogRepository usrScanLogRepository;
 	private final UsrPrvCnsRepository usrPrvCnsRepository;
-	private final QnaRepository qnaRepository;
 
 	@Transactional
 	public BizWipeResponse wipeAllData(String bizRegNo, CurrentAdmin requester) {
@@ -118,7 +116,8 @@ public class BizWipeService {
 		usrRsvnRepository.deleteAll(rsvns);
 		bizMenuRepository.deleteAll(menus);
 
-		// tier 4: 카테고리/좌석/영업시간/예약기준/직원/구독결제내역/방문로그/동의이력/QnA/세션
+		// tier 4: 카테고리/좌석/영업시간/예약기준/직원/구독결제내역/방문로그/동의이력/세션
+		// (QnA는 삭제 대상에서 제외 — 별도로 정리)
 		bizCatRepository.deleteAll(bizCatRepository.findByBizRegNoOrderBySortOrdAsc(bizRegNo));
 		bizSeatRepository.deleteAll(bizSeatRepository.findById_BizRegNoOrderBySortOrdAsc(bizRegNo));
 		bizHourStdRepository.deleteAll(bizHourStdRepository.findById_BizRegNo(bizRegNo));
@@ -127,7 +126,6 @@ public class BizWipeService {
 		bizSubsptPaymentRepository.deleteAll(bizSubsptPaymentRepository.findByBizRegNoOrderByRegDtDesc(bizRegNo));
 		usrScanLogRepository.deleteAll(usrScanLogRepository.findByBizRegNoOrderByVstDtDesc(bizRegNo));
 		usrPrvCnsRepository.deleteAll(usrPrvCnsRepository.findByBizRegNo(bizRegNo));
-		qnaRepository.deleteAll(qnaRepository.findByBizRegNoOrderByCreatedAtDesc(bizRegNo));
 		adminSessionRepository.deleteAll(adminSessionRepository.findByBizRegNo(bizRegNo));
 
 		// tier 5: 구독 상태 + 관리자 계정(+ 이메일 인증코드)
