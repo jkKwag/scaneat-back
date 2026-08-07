@@ -59,6 +59,16 @@ public class BizSubsptPayment {
 	@Column(name = "receipt_url", length = 500)
 	private String receiptUrl;
 
+	// 해지 시 미사용 기간 일할 환불 — 성공하면 refundAmount/refundedDt가, 실패하면 refundFailReason만 채워진다.
+	@Column(name = "refund_amount")
+	private BigDecimal refundAmount;
+
+	@Column(name = "refunded_dt")
+	private LocalDateTime refundedDt;
+
+	@Column(name = "refund_fail_reason", length = 500)
+	private String refundFailReason;
+
 	@Column(name = "reg_usr_id", length = 50)
 	private String regUsrId;
 

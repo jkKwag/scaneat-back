@@ -14,7 +14,9 @@ public record BizSubsptPaymentResponse(
 		String status,
 		LocalDateTime approvedDt,
 		String receiptUrl,
-		String failReason
+		String failReason,
+		BigDecimal refundAmount,
+		LocalDateTime refundedDt
 ) {
 	public static BizSubsptPaymentResponse from(BizSubsptPayment payment) {
 		return new BizSubsptPaymentResponse(
@@ -27,7 +29,9 @@ public record BizSubsptPaymentResponse(
 				payment.getStatus(),
 				payment.getApprovedDt(),
 				payment.getReceiptUrl(),
-				payment.getFailReason()
+				payment.getFailReason(),
+				payment.getRefundAmount(),
+				payment.getRefundedDt()
 		);
 	}
 }

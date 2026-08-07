@@ -55,6 +55,21 @@ public class TossPaymentsClient {
 		}
 	}
 
+	// 구독 해지 시 미사용 기간만큼 일부만 환불할 때 쓴다 — cancelAmount를 안 주면 전액취소로 처리되므로 반드시 넣어야 한다.
+	public Map<String, Object> cancelPaymentPartial(String paymentKey, String cancelReason, BigDecimal cancelAmount) {
+		try {
+			return tossRestClient.post()
+					.uri("/v1/payments/{paymentKey}/cancel", paymentKey)
+					.header(HttpHeaders.AUTHORIZATION, "Basic " + encodedAuth())
+					.body(Map.of("cancelReason", cancelReason, "cancelAmount", cancelAmount))
+					.retrieve()
+					.body(Map.class);
+		} catch (RestClientResponseException ex) {
+			throw new BusinessException(HttpStatus.valueOf(ex.getStatusCode().value()),
+					"환불 처리에 실패했습니다: " + ex.getResponseBodyAsString());
+		}
+	}
+
 	// 구독 카드 등록(빌링 인증) 위젯 완료 후 받은 authKey를 실제 자동결제용 billingKey로 교환한다.
 	public Map<String, Object> issueBillingKey(String authKey, String customerKey) {
 		try {
