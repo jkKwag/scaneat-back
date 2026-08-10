@@ -44,6 +44,9 @@ public class UsrOrder {
 	@Column(name = "pickup_no", length = 20)
 	private String pickupNo;
 
+	@Column(name = "guest_phone", length = 20)
+	private String guestPhone;
+
 	@Column(name = "total_amount", nullable = false)
 	private BigDecimal totalAmount;
 

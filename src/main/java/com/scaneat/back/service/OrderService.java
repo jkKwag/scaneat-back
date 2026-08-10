@@ -118,6 +118,11 @@ public class OrderService {
 		String orderTypCd = request.orderTypCd() != null && !request.orderTypCd().isBlank() ? request.orderTypCd() : "DINE_IN";
 		String pickupNo = "TAKEOUT".equals(orderTypCd) ? generatePickupNo(request.bizRegNo()) : null;
 
+		if ("TAKEOUT".equals(orderTypCd)
+				&& (request.guestPhone() == null || !request.guestPhone().matches("\\d{11}"))) {
+			throw new BusinessException("포장주문은 휴대폰번호(11자리)가 필요합니다.");
+		}
+
 		UsrOrder order = UsrOrder.builder()
 				.orderNo(orderNo)
 				.uuid(request.uuid())
@@ -125,6 +130,7 @@ public class OrderService {
 				.seatNo(request.seatNo())
 				.orderTypCd(orderTypCd)
 				.pickupNo(pickupNo)
+				.guestPhone(request.guestPhone())
 				.totalAmount(totalAmount)
 				.status(OrderStatus.RECEIVED)
 				.regUsrId("guest")
