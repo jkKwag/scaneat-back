@@ -62,6 +62,13 @@ public class OrderService {
 				.toList();
 	}
 
+	// 포장주문 시 휴대폰번호 입력란 자동입력용 — 이 손님(uuid)이 가장 최근에 남긴 번호 하나만 가볍게 조회
+	public String getLastGuestPhone(String uuid) {
+		return usrOrderRepository.findFirstByUuidAndGuestPhoneIsNotNullOrderByRegDtDesc(uuid)
+				.map(UsrOrder::getGuestPhone)
+				.orElse(null);
+	}
+
 	public List<OrderResponse> getOrdersByBiz(String bizRegNo) {
 		return usrOrderRepository.findByBizRegNoOrderByRegDtDesc(bizRegNo).stream()
 				.map(this::buildOrderResponse)
