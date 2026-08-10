@@ -35,6 +35,11 @@ public class OrderController {
 		return ApiResponse.ok(orderService.getOrdersByUuid(uuid));
 	}
 
+	@GetMapping("/last-phone")
+	public ApiResponse<String> getLastGuestPhone(@RequestParam String uuid) {
+		return ApiResponse.ok(orderService.getLastGuestPhone(uuid));
+	}
+
 	@GetMapping("/biz/{bizRegNo}")
 	public ApiResponse<List<OrderResponse>> getOrdersByBiz(
 			@PathVariable String bizRegNo,
