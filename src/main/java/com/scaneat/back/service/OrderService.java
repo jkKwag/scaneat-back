@@ -50,6 +50,7 @@ public class OrderService {
 	private final UsrPaymentOrderRepository usrPaymentOrderRepository;
 	private final UsrPaymentRepository usrPaymentRepository;
 	private final OrderEventService orderEventService;
+	private final BizTableAccessService bizTableAccessService;
 
 	public OrderResponse getOrder(String orderNo) {
 		UsrOrder order = findOrder(orderNo);
@@ -128,6 +129,12 @@ public class OrderService {
 		if ("TAKEOUT".equals(orderTypCd)
 				&& (request.guestPhone() == null || !request.guestPhone().matches("\\d{11}"))) {
 			throw new BusinessException("포장주문은 휴대폰번호(11자리)가 필요합니다.");
+		}
+
+		// 매장주문은 직원이 발급한 QR을 스캔해 이 손님(uuid)이 해당 테이블에서 주문권한을 받은 경우에만 허용한다.
+		if ("DINE_IN".equals(orderTypCd) && request.seatNo() != null && !request.seatNo().isBlank()
+				&& !bizTableAccessService.hasValidGrant(request.bizRegNo(), request.seatNo(), request.uuid())) {
+			throw new BusinessException("직원에게 요청한 QR을 스캔한 후 주문할 수 있습니다.");
 		}
 
 		UsrOrder order = UsrOrder.builder()

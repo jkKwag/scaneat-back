@@ -27,8 +27,12 @@ import com.scaneat.back.dto.biz.BizRsvnStdRequest;
 import com.scaneat.back.dto.biz.BizRsvnStdResponse;
 import com.scaneat.back.dto.biz.BizSeatRequest;
 import com.scaneat.back.dto.biz.BizSeatResponse;
+import com.scaneat.back.dto.biz.BizTableAccessGrantRequest;
+import com.scaneat.back.dto.biz.BizTableAccessGrantResponse;
+import com.scaneat.back.dto.biz.BizTableAccessTokenResponse;
 import com.scaneat.back.dto.biz.ImageUploadResponse;
 import com.scaneat.back.service.BizService;
+import com.scaneat.back.service.BizTableAccessService;
 import com.scaneat.back.service.BizWipeService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -53,6 +57,7 @@ public class BizController {
 
 	private final BizService bizService;
 	private final BizWipeService bizWipeService;
+	private final BizTableAccessService bizTableAccessService;
 
 	@GetMapping
 	public ApiResponse<BizPageResponse> getBizPage(
@@ -233,6 +238,26 @@ public class BizController {
 	public ApiResponse<Void> deleteSeat(@PathVariable String bizno, @PathVariable String seatCd) {
 		bizService.deleteSeat(bizno, seatCd);
 		return ApiResponse.ok(null);
+	}
+
+	// 직원 전용 — 특정 손님에게만 보여줄 단기(2분) QR 토큰 발급. 인증은 AdminAuthInterceptor가 처리.
+	@PostMapping("/{bizno}/seats/{seatCd}/access-tokens")
+	public ApiResponse<BizTableAccessTokenResponse> issueAccessToken(@PathVariable String bizno, @PathVariable String seatCd) {
+		return ApiResponse.ok(bizTableAccessService.issueToken(bizno, seatCd));
+	}
+
+	// 손님이 직원 QR을 스캔해 자신(uuid)의 주문권한을 발급받음 — 로그인 없는 손님 전용 공개 API
+	@PostMapping("/{bizno}/seats/{seatCd}/access-grants")
+	public ApiResponse<BizTableAccessGrantResponse> redeemAccessGrant(
+			@PathVariable String bizno, @PathVariable String seatCd, @Valid @RequestBody BizTableAccessGrantRequest request) {
+		return ApiResponse.ok(bizTableAccessService.redeemToken(bizno, seatCd, request.token(), request.uuid()));
+	}
+
+	// 손님이 현재 이 테이블에서 주문 가능한 권한을 갖고 있는지 조회 — 공개 API
+	@GetMapping("/{bizno}/seats/{seatCd}/access-grants")
+	public ApiResponse<BizTableAccessGrantResponse> getAccessGrantStatus(
+			@PathVariable String bizno, @PathVariable String seatCd, @RequestParam String uuid) {
+		return ApiResponse.ok(bizTableAccessService.getGrantStatus(bizno, seatCd, uuid));
 	}
 
 	@GetMapping("/{bizno}/employees")

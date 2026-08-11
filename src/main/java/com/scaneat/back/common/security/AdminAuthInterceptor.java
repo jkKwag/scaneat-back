@@ -67,6 +67,11 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
 					|| uri.equals("/api/biz/signup/email-code/verify")) {
 				return false;
 			}
+			// 손님이 직원 QR을 스캔해 주문권한을 받거나(POST) 현재 권한 상태를 조회(GET)하는 API —
+			// 로그인하지 않은 손님이 호출하므로 메서드에 상관없이 항상 공개해야 한다.
+			if (uri.endsWith("/access-grants")) {
+				return false;
+			}
 			if (uri.endsWith("/employees") || uri.endsWith("/seats/admin") || uri.endsWith("/approvals")
 					|| uri.endsWith("/registration-cert") || uri.contains("/subscription")) {
 				return true;
