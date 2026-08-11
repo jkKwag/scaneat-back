@@ -11,6 +11,9 @@ public record OrderRequest(
 		String seatNo,
 		String orderTypCd,
 		String guestPhone,
+		// true면 결제 없이 먼저 접수하는 매장주문(이른바 "탭 열어두기") — 결제는 항상 즉시 이뤄지므로
+		// 결제 주문에는 해당 없고, 이 미결제 주문 생성에만 직원 QR 권한을 요구한다.
+		Boolean payLater,
 		@NotEmpty(message = "주문 항목이 최소 1개 필요합니다.") @Valid List<OrderItemRequest> items
 ) {
 }
