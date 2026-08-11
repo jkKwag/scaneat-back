@@ -21,6 +21,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -39,17 +40,27 @@ public class PaymentService {
 	private final UsrPaymentRepository usrPaymentRepository;
 	private final UsrPaymentPgRepository usrPaymentPgRepository;
 	private final UsrPaymentOrderRepository usrPaymentOrderRepository;
+	private final OrderService orderService;
 
 	@Transactional
 	public PaymentResponse confirmPayment(PaymentConfirmRequest request) {
-		List<UsrOrder> orders = usrOrderRepository.findAllById(request.orderNos());
-		if (orders.size() != request.orderNos().size()) {
+		List<String> existingOrderNos = request.orderNos() != null ? request.orderNos() : List.of();
+		List<UsrOrder> orders = new ArrayList<>(usrOrderRepository.findAllById(existingOrderNos));
+		if (orders.size() != existingOrderNos.size()) {
 			throw new ResourceNotFoundException("존재하지 않는 주문번호가 포함되어 있습니다.");
+		}
+		if (orders.isEmpty() && request.newOrder() == null) {
+			throw new BusinessException("결제할 주문 정보가 없습니다.");
 		}
 
 		Map<String, Object> result = tossPaymentsClient.confirmPayment(
 				request.paymentKey(), request.orderId(), request.amount());
 		log.info("[Toss] confirm raw response: {}", result);
+
+		// 결제 승인이 실제로 성공했을 때만 주문을 생성한다 — 검증 전에 미리 만들어두지 않는다.
+		if (request.newOrder() != null) {
+			orders.add(orderService.createOrderForPayment(request.newOrder()));
+		}
 
 		LocalDateTime now = LocalDateTime.now();
 		UsrOrder firstOrder = orders.get(0);
@@ -96,7 +107,8 @@ public class PaymentService {
 				.toList();
 		usrPaymentOrderRepository.saveAll(mappings);
 
-		return PaymentResponse.from(payment, request.orderNos(), PaymentPgResponse.from(pg));
+		List<String> orderNos = orders.stream().map(UsrOrder::getOrderNo).toList();
+		return PaymentResponse.from(payment, orderNos, PaymentPgResponse.from(pg));
 	}
 
 	@Transactional
