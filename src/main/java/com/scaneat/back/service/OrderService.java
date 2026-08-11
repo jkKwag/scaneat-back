@@ -84,8 +84,35 @@ public class OrderService {
 				.toList();
 	}
 
+	// 손님이 직접 호출하는 결제 없는 매장주문("주문만 하기") — 항상 직원 QR 권한을 요구한다.
+	// 결제가 즉시 이뤄지는 주문은 PaymentService가 결제 승인 성공 후 createOrderForPayment로 생성하므로
+	// 이 경로로는 오지 않는다.
 	@Transactional
 	public OrderResponse createOrder(OrderRequest request) {
+		validateDineInAccess(request);
+		return buildOrderResponse(persistOrder(request));
+	}
+
+	// 결제 승인이 실제로 성공한 직후 PaymentService에서만 호출한다 — 결제 자체가 물리적 증빙이므로
+	// QR 권한 검증을 건너뛴다. 컨트롤러에서 직접 호출할 수 없도록 별도 공개 메서드로 분리해둔다.
+	@Transactional
+	public UsrOrder createOrderForPayment(OrderRequest request) {
+		return persistOrder(request);
+	}
+
+	private void validateDineInAccess(OrderRequest request) {
+		String orderTypCd = resolveOrderTypCd(request);
+		if ("DINE_IN".equals(orderTypCd) && request.seatNo() != null && !request.seatNo().isBlank()
+				&& !bizTableAccessService.hasValidGrant(request.bizRegNo(), request.seatNo(), request.uuid())) {
+			throw new BusinessException("직원에게 요청한 QR을 스캔한 후 주문할 수 있습니다.");
+		}
+	}
+
+	private String resolveOrderTypCd(OrderRequest request) {
+		return request.orderTypCd() != null && !request.orderTypCd().isBlank() ? request.orderTypCd() : "DINE_IN";
+	}
+
+	private UsrOrder persistOrder(OrderRequest request) {
 		LocalDateTime now = LocalDateTime.now();
 		String orderNo = generateOrderNo();
 
@@ -123,20 +150,12 @@ public class OrderService {
 			seq++;
 		}
 
-		String orderTypCd = request.orderTypCd() != null && !request.orderTypCd().isBlank() ? request.orderTypCd() : "DINE_IN";
+		String orderTypCd = resolveOrderTypCd(request);
 		String pickupNo = "TAKEOUT".equals(orderTypCd) ? generatePickupNo(request.bizRegNo()) : null;
 
 		if ("TAKEOUT".equals(orderTypCd)
 				&& (request.guestPhone() == null || !request.guestPhone().matches("\\d{11}"))) {
 			throw new BusinessException("포장주문은 휴대폰번호(11자리)가 필요합니다.");
-		}
-
-		// 결제 없이 먼저 접수하는 매장주문("주문만 하기")은 직원이 발급한 QR을 스캔해 이 손님(uuid)이
-		// 해당 테이블에서 주문권한을 받은 경우에만 허용한다. 결제가 즉시 이뤄지는 주문은 대상이 아니다.
-		if ("DINE_IN".equals(orderTypCd) && Boolean.TRUE.equals(request.payLater())
-				&& request.seatNo() != null && !request.seatNo().isBlank()
-				&& !bizTableAccessService.hasValidGrant(request.bizRegNo(), request.seatNo(), request.uuid())) {
-			throw new BusinessException("직원에게 요청한 QR을 스캔한 후 주문할 수 있습니다.");
 		}
 
 		UsrOrder order = UsrOrder.builder()
@@ -157,7 +176,7 @@ public class OrderService {
 		usrOrderItemRepository.saveAll(items);
 		usrOrderItemOptRepository.saveAll(options);
 
-		return buildOrderResponse(order);
+		return order;
 	}
 
 	@Transactional
