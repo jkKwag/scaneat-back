@@ -131,8 +131,10 @@ public class OrderService {
 			throw new BusinessException("포장주문은 휴대폰번호(11자리)가 필요합니다.");
 		}
 
-		// 매장주문은 직원이 발급한 QR을 스캔해 이 손님(uuid)이 해당 테이블에서 주문권한을 받은 경우에만 허용한다.
-		if ("DINE_IN".equals(orderTypCd) && request.seatNo() != null && !request.seatNo().isBlank()
+		// 결제 없이 먼저 접수하는 매장주문("주문만 하기")은 직원이 발급한 QR을 스캔해 이 손님(uuid)이
+		// 해당 테이블에서 주문권한을 받은 경우에만 허용한다. 결제가 즉시 이뤄지는 주문은 대상이 아니다.
+		if ("DINE_IN".equals(orderTypCd) && Boolean.TRUE.equals(request.payLater())
+				&& request.seatNo() != null && !request.seatNo().isBlank()
 				&& !bizTableAccessService.hasValidGrant(request.bizRegNo(), request.seatNo(), request.uuid())) {
 			throw new BusinessException("직원에게 요청한 QR을 스캔한 후 주문할 수 있습니다.");
 		}
