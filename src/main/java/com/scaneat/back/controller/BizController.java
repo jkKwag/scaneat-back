@@ -31,9 +31,11 @@ import com.scaneat.back.dto.biz.BizTableAccessGrantRequest;
 import com.scaneat.back.dto.biz.BizTableAccessGrantResponse;
 import com.scaneat.back.dto.biz.BizTableAccessTokenResponse;
 import com.scaneat.back.dto.biz.ImageUploadResponse;
+import com.scaneat.back.dto.biz.SeatStatusResponse;
 import com.scaneat.back.service.BizService;
 import com.scaneat.back.service.BizTableAccessService;
 import com.scaneat.back.service.BizWipeService;
+import com.scaneat.back.service.SeatStatusService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -58,6 +60,7 @@ public class BizController {
 	private final BizService bizService;
 	private final BizWipeService bizWipeService;
 	private final BizTableAccessService bizTableAccessService;
+	private final SeatStatusService seatStatusService;
 
 	@GetMapping
 	public ApiResponse<BizPageResponse> getBizPage(
@@ -221,6 +224,12 @@ public class BizController {
 	@GetMapping("/{bizno}/seats/admin")
 	public ApiResponse<List<BizSeatResponse>> getSeatsForAdmin(@PathVariable String bizno) {
 		return ApiResponse.ok(bizService.getSeatsForAdmin(bizno));
+	}
+
+	// 좌석 점유현황 — 착석/주문/결제 상태를 좌석별로 한번에 조회 (관리자 전용)
+	@GetMapping("/{bizno}/seat-status")
+	public ApiResponse<List<SeatStatusResponse>> getSeatStatus(@PathVariable String bizno) {
+		return ApiResponse.ok(seatStatusService.getSeatStatus(bizno));
 	}
 
 	@PostMapping("/{bizno}/seats")

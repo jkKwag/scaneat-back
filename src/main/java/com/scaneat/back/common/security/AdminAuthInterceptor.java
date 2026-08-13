@@ -58,7 +58,7 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
 	}
 
 	// /api/biz/**는 조회(GET)는 손님도 QR로 보는 공개 메뉴판이라 그대로 열어두고,
-	// 등록/수정/삭제와 employees·seats/admin·approvals·registration-cert 조회는 관리자 인증을 요구한다.
+	// 등록/수정/삭제와 employees·seats/admin·seat-status·approvals·registration-cert 조회는 관리자 인증을 요구한다.
 	// signup 관련 경로만 아직 로그인이 불가능한 가입 단계라 예외적으로 공개해둔다.
 	private boolean requiresAuth(HttpServletRequest request) {
 		String uri = request.getRequestURI();
@@ -72,8 +72,8 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
 			if (uri.endsWith("/access-grants")) {
 				return false;
 			}
-			if (uri.endsWith("/employees") || uri.endsWith("/seats/admin") || uri.endsWith("/approvals")
-					|| uri.endsWith("/registration-cert") || uri.contains("/subscription")) {
+			if (uri.endsWith("/employees") || uri.endsWith("/seats/admin") || uri.endsWith("/seat-status")
+					|| uri.endsWith("/approvals") || uri.endsWith("/registration-cert") || uri.contains("/subscription")) {
 				return true;
 			}
 			return !"GET".equalsIgnoreCase(request.getMethod());
