@@ -18,5 +18,5 @@ public interface UsrOrderRepository extends JpaRepository<UsrOrder, String> {
 
 	boolean existsByBizRegNoAndPickupNoAndRegDtBetween(String bizRegNo, String pickupNo, LocalDateTime from, LocalDateTime to);
 
-	List<UsrOrder> findByBizRegNoAndSeatNoAndRegDtAfterOrderByRegDtDesc(String bizRegNo, String seatNo, LocalDateTime after);
+	List<UsrOrder> findByBizRegNoAndSeatNoAndRegDtGreaterThanEqualOrderByRegDtDesc(String bizRegNo, String seatNo, LocalDateTime from);
 }
