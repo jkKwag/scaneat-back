@@ -43,6 +43,14 @@ public class BizSeat {
 	@Column(name = "use_yn", length = 1, nullable = false)
 	private String useYn;
 
+	// 직원이 좌석 점유현황 화면에서 수동으로 누르는 착석/해제 토글. SEATED | EMPTY.
+	@ColumnDefault("'EMPTY'")
+	@Column(name = "seat_status_cd", length = 10, nullable = false)
+	private String seatStatusCd;
+
+	@Column(name = "seat_status_at")
+	private LocalDateTime seatStatusAt;
+
 	@Column(name = "reg_usr_id", length = 50)
 	private String regUsrId;
 
