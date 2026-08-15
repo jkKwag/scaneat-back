@@ -32,6 +32,7 @@ import com.scaneat.back.dto.biz.BizTableAccessGrantResponse;
 import com.scaneat.back.dto.biz.BizTableAccessTokenResponse;
 import com.scaneat.back.dto.biz.ImageUploadResponse;
 import com.scaneat.back.dto.biz.SeatStatusResponse;
+import com.scaneat.back.dto.biz.SeatStatusUpdateRequest;
 import com.scaneat.back.service.BizService;
 import com.scaneat.back.service.BizTableAccessService;
 import com.scaneat.back.service.BizWipeService;
@@ -230,6 +231,13 @@ public class BizController {
 	@GetMapping("/{bizno}/seat-status")
 	public ApiResponse<List<SeatStatusResponse>> getSeatStatus(@PathVariable String bizno) {
 		return ApiResponse.ok(seatStatusService.getSeatStatus(bizno));
+	}
+
+	// 직원이 좌석카드에서 착석/해제를 수동으로 전환
+	@PutMapping("/{bizno}/seats/{seatCd}/seat-status")
+	public ApiResponse<SeatStatusResponse> updateSeatStatus(
+			@PathVariable String bizno, @PathVariable String seatCd, @Valid @RequestBody SeatStatusUpdateRequest request) {
+		return ApiResponse.ok(seatStatusService.setManualStatus(bizno, seatCd, request.status()));
 	}
 
 	@PostMapping("/{bizno}/seats")
