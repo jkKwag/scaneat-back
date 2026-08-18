@@ -2,6 +2,7 @@ package com.scaneat.back.service;
 
 import com.scaneat.back.common.exception.BusinessException;
 import com.scaneat.back.common.exception.ResourceNotFoundException;
+import com.scaneat.back.dto.biz.SeatOrderItemResponse;
 import com.scaneat.back.dto.biz.SeatOrderResponse;
 import com.scaneat.back.dto.biz.SeatStatusResponse;
 import com.scaneat.back.entity.BizSeat;
@@ -9,6 +10,7 @@ import com.scaneat.back.entity.BizSeatId;
 import com.scaneat.back.entity.OrderStatus;
 import com.scaneat.back.entity.UsrOrder;
 import com.scaneat.back.repository.BizSeatRepository;
+import com.scaneat.back.repository.UsrOrderItemRepository;
 import com.scaneat.back.repository.UsrOrderRepository;
 import com.scaneat.back.repository.UsrPaymentOrderRepository;
 import com.scaneat.back.repository.UsrPaymentRepository;
@@ -41,6 +43,7 @@ public class SeatStatusService {
 
 	private final BizSeatRepository bizSeatRepository;
 	private final UsrOrderRepository usrOrderRepository;
+	private final UsrOrderItemRepository usrOrderItemRepository;
 	private final UsrPaymentOrderRepository usrPaymentOrderRepository;
 	private final UsrPaymentRepository usrPaymentRepository;
 
@@ -87,7 +90,7 @@ public class SeatStatusService {
 		int minutes = (int) Duration.between(orders.get(0).getRegDt(), now).toMinutes();
 		String state = unpaidAmount == null ? "paid" : "ordered";
 		List<SeatOrderResponse> orderDetails = orders.stream()
-				.map(o -> new SeatOrderResponse(o.getOrderNo(), o.getRegDt(), o.getTotalAmount(), isPaid(o)))
+				.map(o -> new SeatOrderResponse(o.getOrderNo(), o.getRegDt(), o.getTotalAmount(), isPaid(o), itemsOf(o)))
 				.toList();
 		return new SeatStatusResponse(seatCd, seat.getSeatNm(), seat.getCapacity(), seat.getSeatDesc(),
 				state, minutes, paidAmount, unpaidAmount, false, orderDetails);
@@ -100,6 +103,12 @@ public class SeatStatusService {
 				.map(UsrOrder::getTotalAmount)
 				.reduce(BigDecimal.ZERO, BigDecimal::add);
 		return sum.signum() > 0 ? sum : null;
+	}
+
+	private List<SeatOrderItemResponse> itemsOf(UsrOrder order) {
+		return usrOrderItemRepository.findById_OrderNoOrderById_OrderSeqAsc(order.getOrderNo()).stream()
+				.map(item -> new SeatOrderItemResponse(item.getMenuNm(), item.getQty()))
+				.toList();
 	}
 
 	private boolean isPaid(UsrOrder order) {
