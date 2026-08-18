@@ -74,18 +74,28 @@ public class SeatStatusService {
 		if (orders.isEmpty()) {
 			if (!STATUS_SEATED.equals(seat.getSeatStatusCd())) {
 				return new SeatStatusResponse(seatCd, seat.getSeatNm(), seat.getCapacity(), seat.getSeatDesc(),
-						"empty", null, null, false);
+						"empty", null, null, null, false);
 			}
 			int minutes = (int) Duration.between(seat.getSeatStatusAt(), now).toMinutes();
 			return new SeatStatusResponse(seatCd, seat.getSeatNm(), seat.getCapacity(), seat.getSeatDesc(),
-					"seated", minutes, null, minutes >= WARN_AFTER_MIN);
+					"seated", minutes, null, null, minutes >= WARN_AFTER_MIN);
 		}
 
-		BigDecimal amount = orders.stream().map(UsrOrder::getTotalAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+		BigDecimal paidAmount = sumAmount(orders, true);
+		BigDecimal unpaidAmount = sumAmount(orders, false);
 		int minutes = (int) Duration.between(orders.get(0).getRegDt(), now).toMinutes();
-		String state = orders.stream().allMatch(this::isPaid) ? "paid" : "ordered";
+		String state = unpaidAmount == null ? "paid" : "ordered";
 		return new SeatStatusResponse(seatCd, seat.getSeatNm(), seat.getCapacity(), seat.getSeatDesc(),
-				state, minutes, amount, false);
+				state, minutes, paidAmount, unpaidAmount, false);
+	}
+
+	// 결제완료분/미결제분을 나눠서 합산 — 둘 다 없으면(=0원) null로 내려서 프론트에서 안 보이게 한다.
+	private BigDecimal sumAmount(List<UsrOrder> orders, boolean paid) {
+		BigDecimal sum = orders.stream()
+				.filter(o -> isPaid(o) == paid)
+				.map(UsrOrder::getTotalAmount)
+				.reduce(BigDecimal.ZERO, BigDecimal::add);
+		return sum.signum() > 0 ? sum : null;
 	}
 
 	private boolean isPaid(UsrOrder order) {
