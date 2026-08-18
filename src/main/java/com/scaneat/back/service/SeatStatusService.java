@@ -90,7 +90,7 @@ public class SeatStatusService {
 		int minutes = (int) Duration.between(orders.get(0).getRegDt(), now).toMinutes();
 		String state = unpaidAmount == null ? "paid" : "ordered";
 		List<SeatOrderResponse> orderDetails = orders.stream()
-				.map(o -> new SeatOrderResponse(o.getOrderNo(), o.getRegDt(), o.getTotalAmount(), isPaid(o), itemsOf(o)))
+				.map(o -> new SeatOrderResponse(o.getOrderNo(), o.getRegDt(), o.getTotalAmount(), isPaid(o), o.getStatus().name(), itemsOf(o)))
 				.toList();
 		return new SeatStatusResponse(seatCd, seat.getSeatNm(), seat.getCapacity(), seat.getSeatDesc(),
 				state, minutes, paidAmount, unpaidAmount, false, orderDetails);
