@@ -9,7 +9,8 @@ public record SeatStatusResponse(
 		String zone,
 		String state, // empty | seated | ordered | paid
 		Integer elapsedMin,
-		BigDecimal amount,
+		BigDecimal paidAmount,
+		BigDecimal unpaidAmount,
 		boolean warn
 ) {
 }
