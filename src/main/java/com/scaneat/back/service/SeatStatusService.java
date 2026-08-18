@@ -2,6 +2,7 @@ package com.scaneat.back.service;
 
 import com.scaneat.back.common.exception.BusinessException;
 import com.scaneat.back.common.exception.ResourceNotFoundException;
+import com.scaneat.back.dto.biz.SeatOrderResponse;
 import com.scaneat.back.dto.biz.SeatStatusResponse;
 import com.scaneat.back.entity.BizSeat;
 import com.scaneat.back.entity.BizSeatId;
@@ -74,19 +75,22 @@ public class SeatStatusService {
 		if (orders.isEmpty()) {
 			if (!STATUS_SEATED.equals(seat.getSeatStatusCd())) {
 				return new SeatStatusResponse(seatCd, seat.getSeatNm(), seat.getCapacity(), seat.getSeatDesc(),
-						"empty", null, null, null, false);
+						"empty", null, null, null, false, List.of());
 			}
 			int minutes = (int) Duration.between(seat.getSeatStatusAt(), now).toMinutes();
 			return new SeatStatusResponse(seatCd, seat.getSeatNm(), seat.getCapacity(), seat.getSeatDesc(),
-					"seated", minutes, null, null, minutes >= WARN_AFTER_MIN);
+					"seated", minutes, null, null, minutes >= WARN_AFTER_MIN, List.of());
 		}
 
 		BigDecimal paidAmount = sumAmount(orders, true);
 		BigDecimal unpaidAmount = sumAmount(orders, false);
 		int minutes = (int) Duration.between(orders.get(0).getRegDt(), now).toMinutes();
 		String state = unpaidAmount == null ? "paid" : "ordered";
+		List<SeatOrderResponse> orderDetails = orders.stream()
+				.map(o -> new SeatOrderResponse(o.getOrderNo(), o.getRegDt(), o.getTotalAmount(), isPaid(o)))
+				.toList();
 		return new SeatStatusResponse(seatCd, seat.getSeatNm(), seat.getCapacity(), seat.getSeatDesc(),
-				state, minutes, paidAmount, unpaidAmount, false);
+				state, minutes, paidAmount, unpaidAmount, false, orderDetails);
 	}
 
 	// 결제완료분/미결제분을 나눠서 합산 — 둘 다 없으면(=0원) null로 내려서 프론트에서 안 보이게 한다.
