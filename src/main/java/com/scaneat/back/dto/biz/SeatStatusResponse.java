@@ -1,6 +1,7 @@
 package com.scaneat.back.dto.biz;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public record SeatStatusResponse(
 		String seatCd,
@@ -11,6 +12,7 @@ public record SeatStatusResponse(
 		Integer elapsedMin,
 		BigDecimal paidAmount,
 		BigDecimal unpaidAmount,
-		boolean warn
+		boolean warn,
+		List<SeatOrderResponse> orders
 ) {
 }
