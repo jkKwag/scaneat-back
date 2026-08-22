@@ -312,7 +312,7 @@ public class BizService {
 			throw new BusinessException(HttpStatus.BAD_REQUEST, "파일을 읽을 수 없습니다.");
 		}
 		String path = bizRegNo + "/" + System.currentTimeMillis() + ".jpg";
-		r2StorageClient.upload(R2StorageClient.Bucket.BIZ_CERT, path, bytes, "image/jpeg");
+		r2StorageClient.upload(R2StorageClient.Folder.BIZ_CERT, path, bytes, "image/jpeg");
 		biz.setBizCertPath(path);
 		bizRepository.save(biz);
 		return new BizCertUploadResponse(certUrl(biz), null);
@@ -376,7 +376,7 @@ public class BizService {
 
 	private String certUrl(Biz biz) {
 		if (biz.getBizCertPath() == null) return null;
-		return r2StorageClient.publicUrl(R2StorageClient.Bucket.BIZ_CERT, biz.getBizCertPath());
+		return r2StorageClient.publicUrl(R2StorageClient.Folder.BIZ_CERT, biz.getBizCertPath());
 	}
 
 	private void requireSuperForApproval(CurrentAdmin requester) {
@@ -654,14 +654,14 @@ public class BizService {
 	// 프론트에서 리사이징/압축까지 마친 이미지를 받아 R2에 서버가 대신 업로드한다.
 	// R2 액세스 키는 서버에만 있으므로 클라이언트에 노출되지 않는다.
 	public ImageUploadResponse uploadMenuImage(String bizRegNo, MultipartFile file) {
-		return uploadImage(R2StorageClient.Bucket.MENU_IMAGE, bizRegNo, file);
+		return uploadImage(R2StorageClient.Folder.MENU_IMAGE, bizRegNo, file);
 	}
 
 	public ImageUploadResponse uploadSeatImage(String bizRegNo, MultipartFile file) {
-		return uploadImage(R2StorageClient.Bucket.SEAT_IMAGE, bizRegNo, file);
+		return uploadImage(R2StorageClient.Folder.SEAT_IMAGE, bizRegNo, file);
 	}
 
-	private ImageUploadResponse uploadImage(R2StorageClient.Bucket bucket, String bizRegNo, MultipartFile file) {
+	private ImageUploadResponse uploadImage(R2StorageClient.Folder folder, String bizRegNo, MultipartFile file) {
 		if (file.isEmpty()) {
 			throw new BusinessException(HttpStatus.BAD_REQUEST, "업로드할 파일이 없습니다.");
 		}
@@ -671,7 +671,7 @@ public class BizService {
 		}
 		String path = bizRegNo + "/" + System.currentTimeMillis() + ".jpg";
 		try {
-			String url = r2StorageClient.upload(bucket, path, file.getBytes(), "image/jpeg");
+			String url = r2StorageClient.upload(folder, path, file.getBytes(), "image/jpeg");
 			return new ImageUploadResponse(url);
 		} catch (IOException e) {
 			throw new BusinessException(HttpStatus.BAD_REQUEST, "파일을 읽을 수 없습니다.");
