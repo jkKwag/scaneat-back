@@ -410,7 +410,7 @@ public class BizService {
 				.toList();
 	}
 
-	// 카테고리 등록 화면에서 "동일업종 등록 카테고리" 검색용 — 사업장 자신의 업종코드에
+	// 카테고리 등록 화면에서 "동종업종 등록 카테고리" 검색용 — 사업장 자신의 업종코드에
 	// 해당하는 표준 카테고리만 보여준다. 업종코드가 없는 사업장이면 빈 목록을 내려준다.
 	public List<IndCatResponse> getIndCategories(String bizRegNo) {
 		Biz biz = bizRepository.findById(bizRegNo)
