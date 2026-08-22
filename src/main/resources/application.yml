@@ -38,9 +38,18 @@ gemini:
   model: gemini-flash-latest
   base-url: https://generativelanguage.googleapis.com/v1beta
 
-supabase:
-  service-role-key: ${SUPABASE_SERVICE_ROLE_KEY}
-  base-url: https://zhtqkjorhhqnnhgsddmn.supabase.co
+r2:
+  access-key-id: ${R2_ACCESS_KEY_ID}
+  secret-access-key: ${R2_SECRET_ACCESS_KEY}
+  endpoint-url: ${R2_ENDPOINT_URL}
+  bucket:
+    biz-cert: ${R2_BUCKET_BIZ_CERT}
+    menu-image: ${R2_BUCKET_MENU_IMAGE}
+    seat-image: ${R2_BUCKET_SEAT_IMAGE}
+  public-url:
+    biz-cert: ${R2_PUBLIC_URL_BIZ_CERT}
+    menu-image: ${R2_PUBLIC_URL_MENU_IMAGE}
+    seat-image: ${R2_PUBLIC_URL_SEAT_IMAGE}
 
 nts:
   service-key: ${NTS_SERVICE_KEY}

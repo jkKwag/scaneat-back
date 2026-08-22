@@ -4,7 +4,7 @@ import com.scaneat.back.client.GeminiClient;
 import com.scaneat.back.client.NtsClient;
 import com.scaneat.back.client.NtsStatusResult;
 import com.scaneat.back.client.SesClient;
-import com.scaneat.back.client.SupabaseStorageClient;
+import com.scaneat.back.client.R2StorageClient;
 import com.scaneat.back.common.exception.BusinessException;
 import com.scaneat.back.common.exception.ResourceNotFoundException;
 import com.scaneat.back.common.security.CurrentAdmin;
@@ -86,8 +86,6 @@ import org.springframework.web.multipart.MultipartFile;
 public class BizService {
 
 	private static final Logger log = LoggerFactory.getLogger(BizService.class);
-	private static final String BIZ_CERT_BUCKET = "biz-cert";
-	private static final int BIZ_CERT_SIGNED_URL_TTL_SECONDS = 600;
 	private static final int EMAIL_CODE_TTL_MINUTES = 5;
 	private static final String NTS_STT_GRP_CD = "NTS_STT_CD";
 	// 가입 시 상호명을 안 받은 사업자에게 채워두는 placeholder — 실제 값이 아니므로 "미입력"과 동일하게 취급해야 하는 곳(사업자등록증
@@ -95,7 +93,7 @@ public class BizService {
 	public static final String PLACEHOLDER_BIZ_NM = "사업장명 미입력";
 
 	private final BizRepository bizRepository;
-	private final SupabaseStorageClient supabaseStorageClient;
+	private final R2StorageClient r2StorageClient;
 	private final SesClient sesClient;
 	private final EmailVerifyCodeRepository emailVerifyCodeRepository;
 	private final CmmCdRepository cmmCdRepository;
@@ -314,10 +312,10 @@ public class BizService {
 			throw new BusinessException(HttpStatus.BAD_REQUEST, "파일을 읽을 수 없습니다.");
 		}
 		String path = bizRegNo + "/" + System.currentTimeMillis() + ".jpg";
-		supabaseStorageClient.upload(BIZ_CERT_BUCKET, path, bytes, "image/jpeg");
+		r2StorageClient.upload(R2StorageClient.Bucket.BIZ_CERT, path, bytes, "image/jpeg");
 		biz.setBizCertPath(path);
 		bizRepository.save(biz);
-		return new BizCertUploadResponse(signedCertUrl(biz), null);
+		return new BizCertUploadResponse(certUrl(biz), null);
 	}
 
 	// 업로드와 별도 호출 — 인식은 시간이 걸릴 수 있어 업로드 응답과 분리해서, 실패해도 업로드 자체엔 영향 없게 한다.
@@ -334,18 +332,18 @@ public class BizService {
 		}
 	}
 
-	// 본인(또는 SUPER)이 업로드된 사업자등록증을 확인할 때 — 매번 새로 서명된 URL을 내려준다.
+	// 본인(또는 SUPER)이 업로드된 사업자등록증을 확인할 때 사용 — R2 공개 버킷이라 저장된 경로로 바로 URL을 만든다.
 	public String getRegistrationCertUrl(String bizRegNo) {
 		Biz biz = bizRepository.findById(bizRegNo)
 				.orElseThrow(() -> new ResourceNotFoundException("사업자를 찾을 수 없습니다: " + bizRegNo));
-		return signedCertUrl(biz);
+		return certUrl(biz);
 	}
 
-	// SUPER 관리자 전용 — 승인 대기 중인 가입건 목록 (사업자등록증은 매번 새로 서명된 URL로 내려줌)
+	// SUPER 관리자 전용 — 승인 대기 중인 가입건 목록
 	public List<BizApprovalResponse> getPendingApprovals(CurrentAdmin requester) {
 		requireSuperForApproval(requester);
 		return bizRepository.findByApprovalStatus("PENDING").stream()
-				.map(biz -> BizApprovalResponse.from(biz, signedCertUrl(biz),
+				.map(biz -> BizApprovalResponse.from(biz, certUrl(biz),
 						resolveNtsDisplay(biz.getNtsStatusCd(), biz.getNtsStatusMsg())))
 				.toList();
 	}
@@ -376,9 +374,9 @@ public class BizService {
 		bizRepository.save(biz);
 	}
 
-	private String signedCertUrl(Biz biz) {
+	private String certUrl(Biz biz) {
 		if (biz.getBizCertPath() == null) return null;
-		return supabaseStorageClient.createSignedUrl(BIZ_CERT_BUCKET, biz.getBizCertPath(), BIZ_CERT_SIGNED_URL_TTL_SECONDS);
+		return r2StorageClient.publicUrl(R2StorageClient.Bucket.BIZ_CERT, biz.getBizCertPath());
 	}
 
 	private void requireSuperForApproval(CurrentAdmin requester) {
@@ -653,17 +651,17 @@ public class BizService {
 				.toList();
 	}
 
-	// 프론트에서 리사이징/압축까지 마친 이미지를 받아 Supabase Storage에 서버가 대신 업로드한다.
-	// service_role 키는 서버에만 있으므로 클라이언트에 노출되지 않는다.
+	// 프론트에서 리사이징/압축까지 마친 이미지를 받아 R2에 서버가 대신 업로드한다.
+	// R2 액세스 키는 서버에만 있으므로 클라이언트에 노출되지 않는다.
 	public ImageUploadResponse uploadMenuImage(String bizRegNo, MultipartFile file) {
-		return uploadImage("menu-image", bizRegNo, file);
+		return uploadImage(R2StorageClient.Bucket.MENU_IMAGE, bizRegNo, file);
 	}
 
 	public ImageUploadResponse uploadSeatImage(String bizRegNo, MultipartFile file) {
-		return uploadImage("seat-image", bizRegNo, file);
+		return uploadImage(R2StorageClient.Bucket.SEAT_IMAGE, bizRegNo, file);
 	}
 
-	private ImageUploadResponse uploadImage(String bucket, String bizRegNo, MultipartFile file) {
+	private ImageUploadResponse uploadImage(R2StorageClient.Bucket bucket, String bizRegNo, MultipartFile file) {
 		if (file.isEmpty()) {
 			throw new BusinessException(HttpStatus.BAD_REQUEST, "업로드할 파일이 없습니다.");
 		}
@@ -673,7 +671,7 @@ public class BizService {
 		}
 		String path = bizRegNo + "/" + System.currentTimeMillis() + ".jpg";
 		try {
-			String url = supabaseStorageClient.upload(bucket, path, file.getBytes(), "image/jpeg");
+			String url = r2StorageClient.upload(bucket, path, file.getBytes(), "image/jpeg");
 			return new ImageUploadResponse(url);
 		} catch (IOException e) {
 			throw new BusinessException(HttpStatus.BAD_REQUEST, "파일을 읽을 수 없습니다.");

@@ -34,11 +34,6 @@ public class RestClientConfig {
 	}
 
 	@Bean
-	public RestClient supabaseRestClient(@Value("${supabase.base-url}") String baseUrl) {
-		return RestClient.builder().baseUrl(baseUrl).build();
-	}
-
-	@Bean
 	public RestClient ntsRestClient(@Value("${nts.base-url}") String baseUrl) {
 		return RestClient.builder().baseUrl(baseUrl).build();
 	}
