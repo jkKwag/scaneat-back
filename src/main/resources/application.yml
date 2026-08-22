@@ -17,6 +17,10 @@ spring:
       hibernate:
         format_sql: true
         default_schema: public
+        # 스키마 자동 생성 중 특정 테이블에서 에러가 나도(예: 컬럼 불일치) 그 에러만 로그로
+        # 남기고 나머지 스키마 반영은 계속 진행 — 무관한 테이블 문제로 기동 전체가 죽지 않게 함.
+        hbm2ddl:
+          halt_on_error: false
     show-sql: true
   jackson:
     default-property-inclusion: non_null
