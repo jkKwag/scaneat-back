@@ -65,7 +65,7 @@ public class Biz {
 	@Column(name = "nts_status_msg", length = 200)
 	private String ntsStatusMsg;
 
-	// Supabase Storage 안의 경로(공개 URL 아님 — 비공개 버킷이라 매번 서명된 URL로만 열람)
+	// R2 biz-cert 버킷 안의 경로(공개 URL은 아니고 버킷명 다음의 key) — 버킷 자체는 공개 접근 허용
 	@Column(name = "biz_cert_path", length = 200)
 	private String bizCertPath;
 

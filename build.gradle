@@ -22,11 +22,21 @@ repositories {
 	mavenCentral()
 }
 
+dependencyManagement {
+	imports {
+		mavenBom 'software.amazon.awssdk:bom:2.54.2'
+	}
+}
+
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.security:spring-security-crypto'
+
+	// Cloudflare R2(S3 호환 API) 업로드용 — endpoint만 R2로 오버라이드해서 사용한다.
+	implementation 'software.amazon.awssdk:s3'
+	implementation 'software.amazon.awssdk:url-connection-client'
 
 	runtimeOnly 'org.postgresql:postgresql'
 
