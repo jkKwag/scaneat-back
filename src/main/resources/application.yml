@@ -11,15 +11,16 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      # 기존 update는 시작 시 스키마 불일치(컬럼 NOT NULL 추가 실패 등)가 있으면 그 테이블과
-      # 무관한 기능까지 포함해 애플리케이션 전체가 기동을 못 하는 위험이 있었다 — none으로
-      # 바꿔 앱은 항상 뜨게 하고, 이제부터 스키마 변경(컬럼/테이블 추가 등)은 수동으로 반영한다.
-      ddl-auto: none
+      # 자동 컬럼/테이블 생성 재시도 — halt_on_error=false와 함께 실제로 기동 실패 없이
+      # 동작하는지 테스트 중. 문제가 재현되면 none으로 원복할 것.
+      ddl-auto: update
     open-in-view: false
     properties:
       hibernate:
         format_sql: true
         default_schema: public
+        hbm2ddl:
+          halt_on_error: false
     show-sql: true
   jackson:
     default-property-inclusion: non_null
