@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3Configuration;
@@ -26,6 +27,9 @@ public class R2Config {
 						AwsBasicCredentials.create(accessKeyId, secretAccessKey)))
 				// R2는 버킷명.endpoint 형태의 virtual-hosted style을 지원하지 않고 path-style만 지원한다.
 				.serviceConfiguration(S3Configuration.builder().pathStyleAccessEnabled(true).build())
+				// SDK의 기본 HTTP 클라이언트 자동탐색(SPI)이 classpath의 다른 httpclient5 버전과
+				// 충돌해 부팅에 실패해서, 의존성 적은 JDK 내장 클라이언트로 명시적으로 고정한다.
+				.httpClient(UrlConnectionHttpClient.create())
 				.build();
 	}
 }
