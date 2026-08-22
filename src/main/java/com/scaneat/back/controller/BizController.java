@@ -5,6 +5,7 @@ import com.scaneat.back.common.security.CurrentAdmin;
 import com.scaneat.back.dto.biz.BizApprovalResponse;
 import com.scaneat.back.dto.biz.BizCatRequest;
 import com.scaneat.back.dto.biz.BizCatResponse;
+import com.scaneat.back.dto.industry.IndCatResponse;
 import com.scaneat.back.dto.biz.BizCertExtractResult;
 import com.scaneat.back.dto.biz.BizCertUploadResponse;
 import com.scaneat.back.dto.biz.BizEmpResponse;
@@ -156,6 +157,11 @@ public class BizController {
 	@GetMapping("/{bizno}/categories")
 	public ApiResponse<List<BizCatResponse>> getCategories(@PathVariable String bizno) {
 		return ApiResponse.ok(bizService.getCategories(bizno));
+	}
+
+	@GetMapping("/{bizno}/ind-categories")
+	public ApiResponse<List<IndCatResponse>> getIndCategories(@PathVariable String bizno) {
+		return ApiResponse.ok(bizService.getIndCategories(bizno));
 	}
 
 	@PostMapping("/{bizno}/categories")

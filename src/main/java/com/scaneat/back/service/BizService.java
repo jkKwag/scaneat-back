@@ -11,6 +11,7 @@ import com.scaneat.back.common.security.CurrentAdmin;
 import com.scaneat.back.dto.biz.BizApprovalResponse;
 import com.scaneat.back.dto.biz.BizCatRequest;
 import com.scaneat.back.dto.biz.BizCatResponse;
+import com.scaneat.back.dto.industry.IndCatResponse;
 import com.scaneat.back.dto.biz.BizCertExtractResult;
 import com.scaneat.back.dto.biz.BizCertUploadResponse;
 import com.scaneat.back.dto.biz.BizEmpResponse;
@@ -50,6 +51,7 @@ import com.scaneat.back.entity.CmmCdId;
 import com.scaneat.back.entity.EmailVerifyCode;
 import com.scaneat.back.repository.AdminUsrRepository;
 import com.scaneat.back.repository.BizCatRepository;
+import com.scaneat.back.repository.IndCatRepository;
 import com.scaneat.back.repository.BizEmpRepository;
 import com.scaneat.back.repository.BizHourStdRepository;
 import com.scaneat.back.repository.BizMenuOptCdRepository;
@@ -98,6 +100,7 @@ public class BizService {
 	private final EmailVerifyCodeRepository emailVerifyCodeRepository;
 	private final CmmCdRepository cmmCdRepository;
 	private final BizCatRepository bizCatRepository;
+	private final IndCatRepository indCatRepository;
 	private final BizMenuRepository bizMenuRepository;
 	private final BizMenuOptGrpRepository bizMenuOptGrpRepository;
 	private final BizMenuOptCdRepository bizMenuOptCdRepository;
@@ -404,6 +407,19 @@ public class BizService {
 	public List<BizCatResponse> getCategories(String bizRegNo) {
 		return bizCatRepository.findByBizRegNoOrderBySortOrdAsc(bizRegNo).stream()
 				.map(BizCatResponse::from)
+				.toList();
+	}
+
+	// 카테고리 등록 화면에서 "동일업종 등록 카테고리" 검색용 — 사업장 자신의 업종코드에
+	// 해당하는 표준 카테고리만 보여준다. 업종코드가 없는 사업장이면 빈 목록을 내려준다.
+	public List<IndCatResponse> getIndCategories(String bizRegNo) {
+		Biz biz = bizRepository.findById(bizRegNo)
+				.orElseThrow(() -> new ResourceNotFoundException("사업자를 찾을 수 없습니다: " + bizRegNo));
+		if (biz.getIndCd() == null) {
+			return List.of();
+		}
+		return indCatRepository.findByIndCdAndUseYnOrderBySortOrdAsc(biz.getIndCd(), "Y").stream()
+				.map(IndCatResponse::from)
 				.toList();
 	}
 
