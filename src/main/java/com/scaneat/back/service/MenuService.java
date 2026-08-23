@@ -115,6 +115,44 @@ public class MenuService {
 	}
 
 	@Transactional
+	public MenuOptionGroupResponse updateOptionGroup(
+			String menuCd, String optGrpCd, MenuOptionGroupRequest request, CurrentAdmin requester) {
+		verifyOwnership(menuCd, requester);
+		BizMenuOptGrp grp = bizMenuOptGrpRepository.findById(optGrpCd)
+				.orElseThrow(() -> new ResourceNotFoundException("옵션그룹을 찾을 수 없습니다: " + optGrpCd));
+		grp.setOptGrpNm(request.optGrpNm());
+		if (request.optType() != null) grp.setOptType(request.optType());
+		if (request.requiredYn() != null) grp.setRequiredYn(request.requiredYn());
+		grp.setMinSelCnt(request.minSelCnt());
+		grp.setMaxSelCnt(request.maxSelCnt());
+		grp.setUpdUsrId("admin");
+		grp.setUpdDt(LocalDateTime.now());
+		bizMenuOptGrpRepository.save(grp);
+
+		List<MenuOptionResponse> options = bizMenuOptCdRepository.findByMenuCdAndOptGrpCd(menuCd, optGrpCd).stream()
+				.map(MenuOptionResponse::from)
+				.toList();
+		return MenuOptionGroupResponse.from(grp, options);
+	}
+
+	@Transactional
+	public MenuOptionResponse updateOption(
+			String menuCd, String optGrpCd, String optCd, MenuOptionRequest request, CurrentAdmin requester) {
+		verifyOwnership(menuCd, requester);
+		BizMenuOptCd code = bizMenuOptCdRepository.findById(optCd)
+				.orElseThrow(() -> new ResourceNotFoundException("옵션을 찾을 수 없습니다: " + optCd));
+		if (!code.getOptGrpCd().equals(optGrpCd) || !code.getMenuCd().equals(menuCd)) {
+			throw new ResourceNotFoundException("옵션을 찾을 수 없습니다: " + optCd);
+		}
+		code.setOptNm(request.optNm());
+		code.setAddPrice(request.addPrice() != null ? request.addPrice() : BigDecimal.ZERO);
+		code.setUpdUsrId("admin");
+		code.setUpdDt(LocalDateTime.now());
+		bizMenuOptCdRepository.save(code);
+		return MenuOptionResponse.from(code);
+	}
+
+	@Transactional
 	public void deleteOption(String menuCd, String optGrpCd, String optCd, CurrentAdmin requester) {
 		verifyOwnership(menuCd, requester);
 		bizMenuOptCdRepository.deleteById(optCd);

@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -41,6 +42,20 @@ public class MenuController {
 			@PathVariable String menuCd, @PathVariable String optGrpCd, @RequestBody MenuOptionRequest request,
 			HttpServletRequest httpRequest) {
 		return ApiResponse.ok(menuService.addOption(menuCd, optGrpCd, request, currentAdmin(httpRequest)));
+	}
+
+	@PutMapping("/{menuCd}/option-groups/{optGrpCd}")
+	public ApiResponse<MenuOptionGroupResponse> updateOptionGroup(
+			@PathVariable String menuCd, @PathVariable String optGrpCd, @RequestBody MenuOptionGroupRequest request,
+			HttpServletRequest httpRequest) {
+		return ApiResponse.ok(menuService.updateOptionGroup(menuCd, optGrpCd, request, currentAdmin(httpRequest)));
+	}
+
+	@PutMapping("/{menuCd}/option-groups/{optGrpCd}/options/{optCd}")
+	public ApiResponse<MenuOptionResponse> updateOption(
+			@PathVariable String menuCd, @PathVariable String optGrpCd, @PathVariable String optCd,
+			@RequestBody MenuOptionRequest request, HttpServletRequest httpRequest) {
+		return ApiResponse.ok(menuService.updateOption(menuCd, optGrpCd, optCd, request, currentAdmin(httpRequest)));
 	}
 
 	@DeleteMapping("/{menuCd}/option-groups/{optGrpCd}/options/{optCd}")
