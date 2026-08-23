@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 
 public record MenuOptionRequest(
 		String optNm,
-		BigDecimal addPrice
+		BigDecimal addPrice,
+		Integer sortOrd
 ) {
 }

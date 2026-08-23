@@ -98,7 +98,9 @@ public class MenuService {
 	public MenuOptionResponse addOption(String menuCd, String optGrpCd, MenuOptionRequest request, CurrentAdmin requester) {
 		verifyOwnership(menuCd, requester);
 		LocalDateTime now = LocalDateTime.now();
-		int sortOrd = bizMenuOptCdRepository.findByMenuCdAndOptGrpCd(menuCd, optGrpCd).size() + 1;
+		int sortOrd = request.sortOrd() != null
+				? request.sortOrd()
+				: bizMenuOptCdRepository.findByMenuCdAndOptGrpCd(menuCd, optGrpCd).size() + 1;
 		BizMenuOptCd code = BizMenuOptCd.builder()
 				.optCd(generateOptCd())
 				.optGrpCd(optGrpCd)
@@ -146,6 +148,7 @@ public class MenuService {
 		}
 		code.setOptNm(request.optNm());
 		code.setAddPrice(request.addPrice() != null ? request.addPrice() : BigDecimal.ZERO);
+		if (request.sortOrd() != null) code.setSortOrd(request.sortOrd());
 		code.setUpdUsrId("admin");
 		code.setUpdDt(LocalDateTime.now());
 		bizMenuOptCdRepository.save(code);
