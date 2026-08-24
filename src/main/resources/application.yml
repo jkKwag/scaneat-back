@@ -53,6 +53,12 @@ nts:
   service-key: ${NTS_SERVICE_KEY}
   base-url: https://api.odcloud.kr/api/nts-businessman/v1
 
+push:
+  vapid:
+    public-key: ${VAPID_PUBLIC_KEY}
+    private-key: ${VAPID_PRIVATE_KEY}
+    subject: mailto:admin@jkscaneat.com
+
 aws:
   ses:
     access-key: ${AWS_SES_ACCESS_KEY}
