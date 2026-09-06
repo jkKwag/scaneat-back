@@ -10,6 +10,7 @@ import com.scaneat.back.entity.BizMenuOptCd;
 import com.scaneat.back.entity.UsrOrder;
 import com.scaneat.back.entity.UsrPayment;
 import com.scaneat.back.entity.UsrRsvn;
+import com.scaneat.back.repository.AdminOauthRepository;
 import com.scaneat.back.repository.AdminSessionRepository;
 import com.scaneat.back.repository.AdminUsrRepository;
 import com.scaneat.back.repository.BizCatRepository;
@@ -50,6 +51,7 @@ public class BizWipeService {
 
 	private final BizRepository bizRepository;
 	private final AdminUsrRepository adminUsrRepository;
+	private final AdminOauthRepository adminOauthRepository;
 	private final AdminSessionRepository adminSessionRepository;
 	private final EmailVerifyCodeRepository emailVerifyCodeRepository;
 	private final BizCatRepository bizCatRepository;
@@ -128,12 +130,16 @@ public class BizWipeService {
 		usrPrvCnsRepository.deleteAll(usrPrvCnsRepository.findByBizRegNo(bizRegNo));
 		adminSessionRepository.deleteAll(adminSessionRepository.findByBizRegNo(bizRegNo));
 
-		// tier 5: 구독 상태 + 관리자 계정(+ 이메일 인증코드)
+		// tier 5: 구독 상태 + 관리자 계정(+ 이메일 인증코드 · 소셜 로그인 연동)
 		bizSubsptRepository.findById(bizRegNo).ifPresent(bizSubsptRepository::delete);
 		for (AdminUsr admin : admins) {
 			// 카카오 전용 계정은 이메일(admin_id)이 없을 수 있다.
-			if (admin.getAdminId() == null) continue;
-			emailVerifyCodeRepository.findById(admin.getAdminId()).ifPresent(emailVerifyCodeRepository::delete);
+			if (admin.getAdminId() != null) {
+				emailVerifyCodeRepository.findById(admin.getAdminId()).ifPresent(emailVerifyCodeRepository::delete);
+			}
+			// 안 지우면 admin_no가 재사용될 일은 없지만 tb_admin_oauth에 고아 row가 남고,
+			// 같은 카카오 계정으로 재가입 시도 시 "이미 연동된 계정"으로 잘못 인식해 로그인이 깨진다.
+			adminOauthRepository.deleteById_AdminNo(admin.getAdminNo());
 		}
 		adminUsrRepository.deleteAll(admins);
 
