@@ -96,6 +96,23 @@ public class AdminService {
 		return AdminLoginResponse.fromEmployee(emp, token);
 	}
 
+	// 패스키(지문) 로그인 검증에 성공한 뒤 PasskeyService가 호출 — 비밀번호 로그인과 동일하게
+	// AdminSession을 발급하고 같은 형태의 응답을 돌려준다. adminType은 tb_admin_passkey에 저장해둔
+	// 값 그대로("EMPLOYEE" 또는 AdminRole.name())라 어느 테이블에서 조회할지 바로 알 수 있다.
+	@Transactional
+	public AdminLoginResponse issueSessionForPasskeyLogin(String adminNo, String adminType) {
+		if ("EMPLOYEE".equals(adminType)) {
+			BizEmp emp = bizEmpRepository.findById(adminNo)
+					.orElseThrow(() -> new ResourceNotFoundException("직원 계정을 찾을 수 없습니다: " + adminNo));
+			String token = issueSession(emp.getEmpNo(), "EMPLOYEE", emp.getBizRegNo());
+			return AdminLoginResponse.fromEmployee(emp, token);
+		}
+		AdminUsr admin = adminUsrRepository.findById(adminNo)
+				.orElseThrow(() -> new ResourceNotFoundException("관리자 계정을 찾을 수 없습니다: " + adminNo));
+		String token = issueSession(admin.getAdminNo(), admin.getAdminRole().name(), admin.getBizRegNo());
+		return AdminLoginResponse.from(admin, token);
+	}
+
 	// 위조 불가능한 무작위 세션 토큰을 발급해 DB에 저장한다 — 로그아웃/비밀번호 변경 시
 	// 이 row만 지우면 즉시 무효화할 수 있고(JWT와 달리 서버가 상태를 들고 있음),
 	// 여러 대의 WAS로 이중화해도 같은 DB를 보므로 별도 처리 없이 그대로 동작한다.

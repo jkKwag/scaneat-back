@@ -45,6 +45,8 @@ public class WebConfig implements WebMvcConfigurer {
 						"/api/biz/**")
 				.excludePathPatterns(
 						"/api/admin/login",
+						"/api/admin/passkey/login-options",
+						"/api/admin/passkey/login",
 						"/api/reservation/biz/*/availability");
 	}
 }

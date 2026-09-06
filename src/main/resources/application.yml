@@ -32,6 +32,10 @@ spring:
 app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+  webauthn:
+    rp-id: ${WEBAUTHN_RP_ID:jkscaneat.com}
+    rp-name: JK Scaneat
+    origin: ${WEBAUTHN_ORIGIN:https://www.jkscaneat.com}
 
 toss:
   secret-key: ${TOSS_SECRET_KEY}
