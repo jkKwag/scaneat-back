@@ -42,4 +42,14 @@ public class RestClientConfig {
 	public RestClient sesRestClient(@Value("${aws.ses.region}") String region) {
 		return RestClient.builder().baseUrl("https://email." + region + ".amazonaws.com").build();
 	}
+
+	@Bean
+	public RestClient kakaoAuthRestClient(@Value("${kakao.auth-base-url}") String baseUrl) {
+		return RestClient.builder().baseUrl(baseUrl).build();
+	}
+
+	@Bean
+	public RestClient kakaoApiRestClient(@Value("${kakao.api-base-url}") String baseUrl) {
+		return RestClient.builder().baseUrl(baseUrl).build();
+	}
 }

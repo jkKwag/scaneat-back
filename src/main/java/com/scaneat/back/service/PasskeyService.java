@@ -237,7 +237,7 @@ public class PasskeyService {
 		stored.setLastUsedDt(LocalDateTime.now());
 		adminPasskeyRepository.save(stored);
 
-		return adminService.issueSessionForPasskeyLogin(stored.getAdminNo(), stored.getAdminType());
+		return adminService.issueSessionByAdminNo(stored.getAdminNo(), stored.getAdminType());
 	}
 
 	// ── 공통 ──────────────────────────────────────────────────────────────────

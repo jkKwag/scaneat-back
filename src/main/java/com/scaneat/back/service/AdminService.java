@@ -96,11 +96,12 @@ public class AdminService {
 		return AdminLoginResponse.fromEmployee(emp, token);
 	}
 
-	// 패스키(지문) 로그인 검증에 성공한 뒤 PasskeyService가 호출 — 비밀번호 로그인과 동일하게
-	// AdminSession을 발급하고 같은 형태의 응답을 돌려준다. adminType은 tb_admin_passkey에 저장해둔
-	// 값 그대로("EMPLOYEE" 또는 AdminRole.name())라 어느 테이블에서 조회할지 바로 알 수 있다.
+	// 패스키(지문)·카카오 로그인처럼 비밀번호 없이 신원이 이미 확인된 로그인 성공 후 호출 —
+	// 비밀번호 로그인과 동일하게 AdminSession을 발급하고 같은 형태의 응답을 돌려준다.
+	// adminType은 tb_admin_passkey/tb_admin_oauth에 저장해둔 값 그대로("EMPLOYEE" 또는
+	// AdminRole.name())라 어느 테이블에서 조회할지 바로 알 수 있다.
 	@Transactional
-	public AdminLoginResponse issueSessionForPasskeyLogin(String adminNo, String adminType) {
+	public AdminLoginResponse issueSessionByAdminNo(String adminNo, String adminType) {
 		if ("EMPLOYEE".equals(adminType)) {
 			BizEmp emp = bizEmpRepository.findById(adminNo)
 					.orElseThrow(() -> new ResourceNotFoundException("직원 계정을 찾을 수 없습니다: " + adminNo));

@@ -37,6 +37,15 @@ app:
     rp-name: JK Scaneat
     origin: ${WEBAUTHN_ORIGIN:https://www.jkscaneat.com}
 
+kakao:
+  # 기본값을 비워둬서, 이 값들이 EC2에 아직 등록 안 됐어도 앱 전체가 기동 실패하지 않게 한다 —
+  # 카카오 로그인 자체만 (호출 시점에) 인증 실패로 처리되고, 다른 기능은 정상 동작한다.
+  client-id: ${KAKAO_CLIENT_ID:}
+  client-secret: ${KAKAO_CLIENT_SECRET:}
+  redirect-uri: ${KAKAO_REDIRECT_URI:https://www.jkscaneat.com/admin/kakao/callback}
+  auth-base-url: https://kauth.kakao.com
+  api-base-url: https://kapi.kakao.com
+
 toss:
   secret-key: ${TOSS_SECRET_KEY}
   base-url: https://api.tosspayments.com

@@ -64,7 +64,8 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
 		String uri = request.getRequestURI();
 		if (uri.startsWith("/api/biz/") || uri.equals("/api/biz")) {
 			if (uri.equals("/api/biz/signup") || uri.equals("/api/biz/signup/email-code")
-					|| uri.equals("/api/biz/signup/email-code/verify")) {
+					|| uri.equals("/api/biz/signup/email-code/verify")
+					|| uri.equals("/api/biz/signup/kakao/exchange") || uri.equals("/api/biz/signup/kakao")) {
 				return false;
 			}
 			// 손님이 직원 QR을 스캔해 주문권한을 받거나(POST) 현재 권한 상태를 조회(GET)하는 API,

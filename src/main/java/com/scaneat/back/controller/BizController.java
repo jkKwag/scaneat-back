@@ -31,7 +31,12 @@ import com.scaneat.back.dto.biz.BizSeatResponse;
 import com.scaneat.back.dto.biz.BizTableAccessGrantRequest;
 import com.scaneat.back.dto.biz.BizTableAccessGrantResponse;
 import com.scaneat.back.dto.biz.BizTableAccessTokenResponse;
+import com.scaneat.back.dto.admin.AdminLoginResponse;
 import com.scaneat.back.dto.biz.ImageUploadResponse;
+import com.scaneat.back.dto.biz.KakaoExchangeRequest;
+import com.scaneat.back.dto.biz.KakaoExchangeResponse;
+import com.scaneat.back.dto.biz.KakaoSignupRequest;
+import com.scaneat.back.service.KakaoAuthService;
 import com.scaneat.back.dto.biz.SeatStatusResponse;
 import com.scaneat.back.dto.biz.SeatStatusUpdateRequest;
 import com.scaneat.back.service.BizService;
@@ -60,6 +65,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class BizController {
 
 	private final BizService bizService;
+	private final KakaoAuthService kakaoAuthService;
 	private final BizWipeService bizWipeService;
 	private final BizTableAccessService bizTableAccessService;
 	private final SeatStatusService seatStatusService;
@@ -98,6 +104,19 @@ public class BizController {
 	@PostMapping("/signup")
 	public ApiResponse<BizSignupResponse> signup(@Valid @RequestBody BizSignupRequest request) {
 		return ApiResponse.ok(bizService.signup(request));
+	}
+
+	// 카카오 로그인 리다이렉트로 받은 인가코드 교환 — 이미 연동된 계정이면 바로 로그인,
+	// 처음이면 사업자 정보 입력 화면으로 넘어가라는 신호(signupToken)를 돌려준다.
+	@PostMapping("/signup/kakao/exchange")
+	public ApiResponse<KakaoExchangeResponse> exchangeKakaoCode(@Valid @RequestBody KakaoExchangeRequest request) {
+		return ApiResponse.ok(kakaoAuthService.exchange(request.code()));
+	}
+
+	// 카카오 인증까지 끝난 뒤 사업자 정보만 받아 가입을 완료하고, 바로 로그인 세션을 발급한다.
+	@PostMapping("/signup/kakao")
+	public ApiResponse<AdminLoginResponse> signupWithKakao(@Valid @RequestBody KakaoSignupRequest request) {
+		return ApiResponse.ok(kakaoAuthService.signup(request));
 	}
 
 	// 로그인 후(본인 또는 SUPER) 사업자등록증 업로드/재업로드 — 소유권 확인은 AdminAuthInterceptor가 처리

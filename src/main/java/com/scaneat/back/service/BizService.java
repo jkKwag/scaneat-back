@@ -34,6 +34,7 @@ import com.scaneat.back.dto.biz.BizRsvnStdResponse;
 import com.scaneat.back.dto.biz.BizSeatResponse;
 import com.scaneat.back.dto.biz.BizSeatRequest;
 import com.scaneat.back.dto.biz.ImageUploadResponse;
+import com.scaneat.back.dto.biz.KakaoSignupRequest;
 import com.scaneat.back.entity.AdminRole;
 import com.scaneat.back.entity.AdminUsr;
 import com.scaneat.back.entity.LoginType;
@@ -184,7 +185,7 @@ public class BizService {
 	@Transactional
 	public void sendEmailCode(EmailCodeSendRequest request) {
 		String email = request.email().trim().toLowerCase();
-		if (adminUsrRepository.existsById(email)) {
+		if (adminUsrRepository.existsByAdminId(email)) {
 			throw new BusinessException(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다.");
 		}
 		String code = String.format("%06d", secureRandom.nextInt(1_000_000));
@@ -218,9 +219,6 @@ public class BizService {
 	// 실제 소유권 확인(사업자등록증 대조)은 승인 대기 상태로 남겨 SUPER 관리자가 최종 처리한다.
 	@Transactional
 	public BizSignupResponse signup(BizSignupRequest request) {
-		if (bizRepository.existsById(request.bizRegNo())) {
-			throw new BusinessException(HttpStatus.CONFLICT, "이미 등록된 사업자등록번호입니다: " + request.bizRegNo());
-		}
 		// admin_id는 이메일이라 대소문자를 구분하지 않는다 — 항상 소문자로 정규화해서 저장/조회한다.
 		String normalizedAdminId = request.adminId().trim().toLowerCase();
 		if (adminUsrRepository.existsByAdminId(normalizedAdminId)) {
@@ -231,23 +229,57 @@ public class BizService {
 			throw new BusinessException(HttpStatus.BAD_REQUEST, "이메일 인증을 먼저 완료해주세요.");
 		}
 
-		NtsStatusResult ntsResult = ntsClient.checkStatus(request.bizRegNo());
+		SignupResult result = createBizAndProvAdmin(
+				request.bizRegNo(), request.bizNm(), request.repNm(), request.telNo(), request.mobileTel(),
+				request.emailAddr(), request.indCd(), request.addr(), request.addrDtl(),
+				normalizedAdminId, passwordEncoder.encode(request.password()), LoginType.EMAIL);
+		emailVerifyCodeRepository.deleteById(normalizedAdminId);
+
+		return new BizSignupResponse(result.admin().getBizRegNo(),
+				resolveNtsDisplay(result.ntsResult().statusCd(), result.ntsResult().errorMessage()));
+	}
+
+	// 카카오 인증(KakaoAuthService)으로 신원 확인이 끝난 뒤 사업자 정보만 받아 계정을 만든다 —
+	// 이메일/비밀번호가 없는 계정이라 소셜 로그인 연동(tb_admin_oauth 저장)은 호출한 쪽(KakaoAuthService)
+	// 책임으로 남겨두고, 이 서비스는 카카오라는 특정 provider 개념을 몰라도 되게 한다.
+	@Transactional
+	public AdminUsr signupForOauth(KakaoSignupRequest request) {
+		SignupResult result = createBizAndProvAdmin(
+				request.bizRegNo(), request.bizNm(), request.repNm(), request.telNo(), request.mobileTel(),
+				request.emailAddr(), request.indCd(), request.addr(), request.addrDtl(),
+				null, null, LoginType.KAKAO);
+		return result.admin();
+	}
+
+	private record SignupResult(AdminUsr admin, NtsStatusResult ntsResult) {
+	}
+
+	private SignupResult createBizAndProvAdmin(
+			String bizRegNo, String bizNm, String repNm, String telNo, String mobileTel,
+			String emailAddr, String indCd, String addr, String addrDtl,
+			String adminId, String passwordHash, LoginType loginType) {
+		if (bizRepository.existsById(bizRegNo)) {
+			throw new BusinessException(HttpStatus.CONFLICT, "이미 등록된 사업자등록번호입니다: " + bizRegNo);
+		}
+
+		NtsStatusResult ntsResult = ntsClient.checkStatus(bizRegNo);
 		LocalDateTime now = LocalDateTime.now();
-		String bizNm = request.bizNm() != null && !request.bizNm().isBlank() ? request.bizNm().trim() : PLACEHOLDER_BIZ_NM;
-		// 사업장 이메일을 따로 받지 않으므로, 우선 로그인 아이디(이메일)로 채워두고 필요하면 나중에 바꿀 수 있게 한다.
-		String emailAddr = request.emailAddr() != null && !request.emailAddr().isBlank() ? request.emailAddr().trim() : normalizedAdminId;
+		String resolvedBizNm = bizNm != null && !bizNm.isBlank() ? bizNm.trim() : PLACEHOLDER_BIZ_NM;
+		// 사업장 이메일을 따로 안 받으면 로그인 아이디(이메일)로 채워두던 기존 규칙 — 카카오 가입은
+		// adminId가 없으니 그 경우엔 emailAddr을 입력 안 했으면 그냥 비워둔다.
+		String resolvedEmailAddr = emailAddr != null && !emailAddr.isBlank() ? emailAddr.trim() : adminId;
 
 		Biz biz = Biz.builder()
-				.bizRegNo(request.bizRegNo())
-				.bizNm(bizNm)
-				.repNm(request.repNm())
+				.bizRegNo(bizRegNo)
+				.bizNm(resolvedBizNm)
+				.repNm(repNm)
 				.bizStatus("O")
-				.telNo(request.telNo())
-				.mobileTel(request.mobileTel())
-				.emailAddr(emailAddr)
-				.indCd(request.indCd())
-				.addr(request.addr())
-				.addrDtl(request.addrDtl())
+				.telNo(telNo)
+				.mobileTel(mobileTel)
+				.emailAddr(resolvedEmailAddr)
+				.indCd(indCd)
+				.addr(addr)
+				.addrDtl(addrDtl)
 				.approvalStatus("PENDING")
 				.ntsStatusCd(ntsResult.statusCd())
 				.ntsStatusMsg(ntsResult.errorMessage())
@@ -258,21 +290,19 @@ public class BizService {
 		// 승인되면 approveBiz()에서 BIZ로 바뀐다.
 		AdminUsr admin = AdminUsr.builder()
 				.adminNo(UUID.randomUUID().toString())
-				.adminId(normalizedAdminId)
-				.passwordHash(passwordEncoder.encode(request.password()))
-				.loginType(LoginType.EMAIL)
+				.adminId(adminId)
+				.passwordHash(passwordHash)
+				.loginType(loginType)
 				.adminRole(AdminRole.PROV_ADMIN)
-				.bizRegNo(request.bizRegNo())
-				.adminNm(request.repNm())
+				.bizRegNo(bizRegNo)
+				.adminNm(repNm)
 				.useYn("Y")
 				.regUsrId("self-signup")
 				.regDt(now)
 				.build();
 		adminUsrRepository.save(admin);
-		emailVerifyCodeRepository.deleteById(normalizedAdminId);
 
-		String ntsDisplay = resolveNtsDisplay(ntsResult.statusCd(), ntsResult.errorMessage());
-		return new BizSignupResponse(biz.getBizRegNo(), ntsDisplay);
+		return new SignupResult(admin, ntsResult);
 	}
 
 	// 코드가 있으면 공통코드(NTS_STT_CD)에서 라벨을 찾아 보여주고, 없으면 실패 메시지(있으면)를 그대로 보여준다.
