@@ -14,7 +14,9 @@ public class OauthPendingSignupStore {
 
 	private static final long TTL_MILLIS = 10 * 60 * 1000;
 
-	public record Entry(String provider, String providerUserId, String nickname, String email, long expiresAtEpochMilli) {
+	// accessToken은 가입 완료 직후 "카카오톡 나에게 보내기"로 가입완료 메시지를 보낼 때 쓴다 —
+	// 이 시점이 지나면(가입 폼 작성하는 동안) 다시 구할 방법이 없어서 미리 같이 들고 있어야 한다.
+	public record Entry(String provider, String providerUserId, String nickname, String email, String accessToken, long expiresAtEpochMilli) {
 		boolean isExpired() {
 			return Instant.now().toEpochMilli() > expiresAtEpochMilli;
 		}
@@ -22,9 +24,9 @@ public class OauthPendingSignupStore {
 
 	private final Map<String, Entry> entries = new ConcurrentHashMap<>();
 
-	public String put(String provider, String providerUserId, String nickname, String email) {
+	public String put(String provider, String providerUserId, String nickname, String email, String accessToken) {
 		String token = UUID.randomUUID().toString();
-		entries.put(token, new Entry(provider, providerUserId, nickname, email, Instant.now().toEpochMilli() + TTL_MILLIS));
+		entries.put(token, new Entry(provider, providerUserId, nickname, email, accessToken, Instant.now().toEpochMilli() + TTL_MILLIS));
 		return token;
 	}
 

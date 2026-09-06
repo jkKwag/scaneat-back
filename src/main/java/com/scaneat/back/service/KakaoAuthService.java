@@ -40,7 +40,8 @@ public class KakaoAuthService {
 				.map(oauth -> KakaoExchangeResponse.loggedIn(
 						adminService.issueSessionByAdminNo(oauth.getId().getAdminNo(), oauth.getId().getAdminType())))
 				.orElseGet(() -> {
-					String signupToken = pendingSignupStore.put(PROVIDER, userInfo.providerUserId(), userInfo.nickname(), userInfo.email());
+					String signupToken = pendingSignupStore.put(
+							PROVIDER, userInfo.providerUserId(), userInfo.nickname(), userInfo.email(), accessToken);
 					return KakaoExchangeResponse.needsSignup(signupToken, userInfo.nickname(), userInfo.email());
 				});
 	}
@@ -59,6 +60,9 @@ public class KakaoAuthService {
 				.regDt(LocalDateTime.now())
 				.build());
 
-		return adminService.issueSessionByAdminNo(admin.getAdminNo(), AdminRole.PROV_ADMIN.name());
+		AdminLoginResponse response = adminService.issueSessionByAdminNo(admin.getAdminNo(), AdminRole.PROV_ADMIN.name());
+		// 동의 안 했거나 발송 실패해도 내부에서 로그만 남기고 조용히 넘어가므로 가입 완료엔 영향 없다.
+		kakaoClient.sendWelcomeMessage(pending.accessToken(), pending.nickname());
+		return response;
 	}
 }

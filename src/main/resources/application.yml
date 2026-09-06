@@ -43,6 +43,7 @@ kakao:
   client-id: ${KAKAO_CLIENT_ID:}
   client-secret: ${KAKAO_CLIENT_SECRET:}
   redirect-uri: ${KAKAO_REDIRECT_URI:https://www.jkscaneat.com/admin/kakao/callback}
+  service-url: ${KAKAO_SERVICE_URL:https://www.jkscaneat.com}
   auth-base-url: https://kauth.kakao.com
   api-base-url: https://kapi.kakao.com
 
