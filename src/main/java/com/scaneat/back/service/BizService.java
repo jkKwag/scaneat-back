@@ -631,6 +631,7 @@ public class BizService {
 				.imgUrl(request.imgUrl())
 				.sortOrd(sortOrd)
 				.useYn(request.useYn() != null ? request.useYn() : "Y")
+				.seatStatusCd("EMPTY")
 				.regUsrId("admin")
 				.regDt(now)
 				.build();
@@ -839,6 +840,7 @@ public class BizService {
 					.imgUrl(src.getImgUrl())
 					.sortOrd(src.getSortOrd())
 					.useYn(src.getUseYn())
+					.seatStatusCd("EMPTY")
 					.regUsrId("system")
 					.regDt(now)
 					.build();
