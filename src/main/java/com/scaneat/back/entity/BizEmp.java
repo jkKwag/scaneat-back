@@ -2,6 +2,8 @@ package com.scaneat.back.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.LocalDate;
@@ -22,13 +24,24 @@ import org.hibernate.annotations.ColumnDefault;
 @Builder
 public class BizEmp {
 
-	// admin_id와 동일하게 이메일 주소를 그대로 저장한다 (로그인 화면을 admin_usr와 공유하므로 통일).
+	// 발급 즉시 고정되는 대체키(UUID) — admin_usr와 동일하게, 소셜 로그인 전용 계정은
+	// 이메일이 없을 수 있어 더 이상 이메일(emp_id)을 기본키로 쓰지 않는다.
 	@Id
+	@Column(name = "emp_no", length = 36)
+	private String empNo;
+
+	// 이메일 로그인 계정만 값이 있다 (소셜 로그인 전용 계정은 null 가능).
 	@Column(name = "emp_id", length = 255)
 	private String empId;
 
-	@Column(name = "password_hash", length = 200, nullable = false)
+	// 이메일 로그인 계정만 값이 있다 (소셜 로그인 전용 계정은 null).
+	@Column(name = "password_hash", length = 200)
 	private String passwordHash;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "login_type", length = 20, nullable = false)
+	@ColumnDefault("'EMAIL'")
+	private LoginType loginType;
 
 	@Column(name = "biz_reg_no", length = 10, nullable = false)
 	private String bizRegNo;

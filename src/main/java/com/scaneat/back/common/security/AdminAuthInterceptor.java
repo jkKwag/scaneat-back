@@ -38,7 +38,7 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
 
 		if ("SUPER".equals(session.getAdminRole())) {
 			request.setAttribute(CurrentAdmin.REQUEST_ATTR,
-					new CurrentAdmin(session.getAdminId(), session.getAdminRole(), session.getBizRegNo()));
+					new CurrentAdmin(session.getAdminNo(), session.getAdminRole(), session.getBizRegNo()));
 			return true;
 		}
 
@@ -53,7 +53,7 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
 		}
 
 		request.setAttribute(CurrentAdmin.REQUEST_ATTR,
-				new CurrentAdmin(session.getAdminId(), session.getAdminRole(), session.getBizRegNo()));
+				new CurrentAdmin(session.getAdminNo(), session.getAdminRole(), session.getBizRegNo()));
 		return true;
 	}
 

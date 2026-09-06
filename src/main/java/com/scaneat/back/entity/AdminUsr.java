@@ -23,13 +23,24 @@ import org.hibernate.annotations.ColumnDefault;
 @Builder
 public class AdminUsr {
 
-	// 이메일 주소를 그대로 저장한다 (별도 email 컬럼 없이 admin_id 자체가 이메일).
+	// 발급 즉시 고정되는 대체키(UUID) — 카카오 등 소셜 로그인 전용 계정은 이메일이
+	// 없을 수 있어, 더 이상 이메일(admin_id)을 기본키로 쓰지 않는다.
 	@Id
+	@Column(name = "admin_no", length = 36)
+	private String adminNo;
+
+	// 이메일 로그인 계정만 값이 있다 (소셜 로그인 전용 계정은 null 가능).
 	@Column(name = "admin_id", length = 255)
 	private String adminId;
 
-	@Column(name = "password_hash", length = 200, nullable = false)
+	// 이메일 로그인 계정만 값이 있다 (소셜 로그인 전용 계정은 null).
+	@Column(name = "password_hash", length = 200)
 	private String passwordHash;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "login_type", length = 20, nullable = false)
+	@ColumnDefault("'EMAIL'")
+	private LoginType loginType;
 
 	// TOTP(구글 OTP 등) 2단계 인증용 비밀키 — 등록 전에는 null이며, 등록 전까지는
 	// 비밀번호만으로 로그인된다. SUPER 계정만 등록할 수 있다.

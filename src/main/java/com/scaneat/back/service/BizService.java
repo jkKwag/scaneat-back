@@ -36,6 +36,7 @@ import com.scaneat.back.dto.biz.BizSeatRequest;
 import com.scaneat.back.dto.biz.ImageUploadResponse;
 import com.scaneat.back.entity.AdminRole;
 import com.scaneat.back.entity.AdminUsr;
+import com.scaneat.back.entity.LoginType;
 import com.scaneat.back.entity.Biz;
 import com.scaneat.back.entity.BizCat;
 import com.scaneat.back.entity.BizHourStd;
@@ -69,6 +70,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -221,7 +223,7 @@ public class BizService {
 		}
 		// admin_id는 이메일이라 대소문자를 구분하지 않는다 — 항상 소문자로 정규화해서 저장/조회한다.
 		String normalizedAdminId = request.adminId().trim().toLowerCase();
-		if (adminUsrRepository.existsById(normalizedAdminId)) {
+		if (adminUsrRepository.existsByAdminId(normalizedAdminId)) {
 			throw new BusinessException(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다.");
 		}
 		EmailVerifyCode verify = emailVerifyCodeRepository.findById(normalizedAdminId).orElse(null);
@@ -255,8 +257,10 @@ public class BizService {
 		// 승인 전에도 로그인은 되지만, PROV_ADMIN 역할이라 tb_sys_menu_role로 제한된 메뉴만 보인다.
 		// 승인되면 approveBiz()에서 BIZ로 바뀐다.
 		AdminUsr admin = AdminUsr.builder()
+				.adminNo(UUID.randomUUID().toString())
 				.adminId(normalizedAdminId)
 				.passwordHash(passwordEncoder.encode(request.password()))
+				.loginType(LoginType.EMAIL)
 				.adminRole(AdminRole.PROV_ADMIN)
 				.bizRegNo(request.bizRegNo())
 				.adminNm(request.repNm())

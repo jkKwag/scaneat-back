@@ -24,10 +24,10 @@ public class AdminSession {
 	@Column(name = "token", length = 64)
 	private String token;
 
-	// tb_admin_usr.admin_id 또는 tb_biz_emp.emp_id — 로그인 화면이 두 테이블을 함께
+	// tb_admin_usr.admin_no 또는 tb_biz_emp.emp_no — 로그인 화면이 두 테이블을 함께
 	// 조회하는 것과 동일하게, 세션도 하나의 테이블로 같이 관리한다.
-	@Column(name = "admin_id", length = 255, nullable = false)
-	private String adminId;
+	@Column(name = "admin_no", length = 36, nullable = false)
+	private String adminNo;
 
 	@Column(name = "admin_role_cd", length = 20, nullable = false)
 	private String adminRole;

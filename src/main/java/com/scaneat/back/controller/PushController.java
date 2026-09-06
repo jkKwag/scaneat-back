@@ -25,7 +25,7 @@ public class PushController {
 	public ApiResponse<Void> subscribe(
 			@PathVariable String bizno, @RequestBody PushSubscribeRequest request, HttpServletRequest httpRequest) {
 		CurrentAdmin admin = (CurrentAdmin) httpRequest.getAttribute(CurrentAdmin.REQUEST_ATTR);
-		pushRegService.subscribe(bizno, request, admin.adminId());
+		pushRegService.subscribe(bizno, request, admin.adminNo());
 		return ApiResponse.ok(null);
 	}
 

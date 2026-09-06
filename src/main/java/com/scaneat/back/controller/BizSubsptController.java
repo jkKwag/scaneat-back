@@ -42,19 +42,19 @@ public class BizSubsptController {
 	@PostMapping("/{bizno}/subscription")
 	public ApiResponse<BizSubsptResponse> startSubscription(
 			@PathVariable String bizno, @Valid @RequestBody BizSubsptStartRequest request, HttpServletRequest httpRequest) {
-		return ApiResponse.ok(bizSubsptService.startSubscription(bizno, request, currentAdmin(httpRequest).adminId()));
+		return ApiResponse.ok(bizSubsptService.startSubscription(bizno, request, currentAdmin(httpRequest).adminNo()));
 	}
 
 	// 이미 구독 중인 사업장의 요금제 변경 예약 — 카드 재등록/즉시 결제 없이 다음 결제일부터 적용된다.
 	@PutMapping("/{bizno}/subscription/plan")
 	public ApiResponse<BizSubsptResponse> schedulePlanChange(
 			@PathVariable String bizno, @Valid @RequestBody BizSubsptPlanChangeRequest request, HttpServletRequest httpRequest) {
-		return ApiResponse.ok(bizSubsptService.schedulePlanChange(bizno, request.planCd(), currentAdmin(httpRequest).adminId()));
+		return ApiResponse.ok(bizSubsptService.schedulePlanChange(bizno, request.planCd(), currentAdmin(httpRequest).adminNo()));
 	}
 
 	@PutMapping("/{bizno}/subscription/cancel")
 	public ApiResponse<BizSubsptCancelResponse> cancelSubscription(@PathVariable String bizno, HttpServletRequest httpRequest) {
-		return ApiResponse.ok(bizSubsptService.cancelSubscription(bizno, currentAdmin(httpRequest).adminId()));
+		return ApiResponse.ok(bizSubsptService.cancelSubscription(bizno, currentAdmin(httpRequest).adminNo()));
 	}
 
 	@GetMapping("/{bizno}/subscription/payments")

@@ -10,6 +10,8 @@ public interface AdminUsrRepository extends JpaRepository<AdminUsr, String> {
 
 	Optional<AdminUsr> findByAdminIdAndUseYn(String adminId, String useYn);
 
+	boolean existsByAdminId(String adminId);
+
 	List<AdminUsr> findByBizRegNoOrderByRegDtAsc(String bizRegNo);
 
 	long countByAdminRole(AdminRole adminRole);

@@ -4,6 +4,7 @@ import com.scaneat.back.entity.AdminUsr;
 import com.scaneat.back.entity.BizEmp;
 
 public record AdminLoginResponse(
+		String adminNo,
 		String adminId,
 		String adminNm,
 		String adminRole,
@@ -12,6 +13,7 @@ public record AdminLoginResponse(
 ) {
 	public static AdminLoginResponse from(AdminUsr admin, String token) {
 		return new AdminLoginResponse(
+				admin.getAdminNo(),
 				admin.getAdminId(),
 				admin.getAdminNm(),
 				admin.getAdminRole().name(),
@@ -24,6 +26,7 @@ public record AdminLoginResponse(
 	// 같은 로그인 화면/응답 형태를 그대로 재사용한다 (관리자 계정과 완전히 분리된 별도 테이블)
 	public static AdminLoginResponse fromEmployee(BizEmp emp, String token) {
 		return new AdminLoginResponse(
+				emp.getEmpNo(),
 				emp.getEmpId(),
 				emp.getEmpNm(),
 				"EMPLOYEE",

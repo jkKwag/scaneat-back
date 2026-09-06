@@ -4,6 +4,7 @@ import com.scaneat.back.entity.AdminUsr;
 import java.time.LocalDateTime;
 
 public record AdminUsrResponse(
+		String adminNo,
 		String adminId,
 		String adminNm,
 		String adminRole,
@@ -15,6 +16,7 @@ public record AdminUsrResponse(
 ) {
 	public static AdminUsrResponse from(AdminUsr admin) {
 		return new AdminUsrResponse(
+				admin.getAdminNo(),
 				admin.getAdminId(),
 				admin.getAdminNm(),
 				admin.getAdminRole().name(),

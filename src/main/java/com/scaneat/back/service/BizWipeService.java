@@ -131,6 +131,8 @@ public class BizWipeService {
 		// tier 5: 구독 상태 + 관리자 계정(+ 이메일 인증코드)
 		bizSubsptRepository.findById(bizRegNo).ifPresent(bizSubsptRepository::delete);
 		for (AdminUsr admin : admins) {
+			// 카카오 전용 계정은 이메일(admin_id)이 없을 수 있다.
+			if (admin.getAdminId() == null) continue;
 			emailVerifyCodeRepository.findById(admin.getAdminId()).ifPresent(emailVerifyCodeRepository::delete);
 		}
 		adminUsrRepository.deleteAll(admins);

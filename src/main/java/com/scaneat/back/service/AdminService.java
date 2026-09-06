@@ -83,7 +83,7 @@ public class AdminService {
 					throw new BusinessException(HttpStatus.UNAUTHORIZED, TOTP_INVALID_MESSAGE);
 				}
 			}
-			String token = issueSession(admin.get().getAdminId(), admin.get().getAdminRole().name(), admin.get().getBizRegNo());
+			String token = issueSession(admin.get().getAdminNo(), admin.get().getAdminRole().name(), admin.get().getBizRegNo());
 			return AdminLoginResponse.from(admin.get(), token);
 		}
 
@@ -92,21 +92,21 @@ public class AdminService {
 		if (!passwordEncoder.matches(request.password(), emp.getPasswordHash())) {
 			throw new BusinessException(HttpStatus.UNAUTHORIZED, INVALID_CREDENTIALS_MESSAGE);
 		}
-		String token = issueSession(emp.getEmpId(), "EMPLOYEE", emp.getBizRegNo());
+		String token = issueSession(emp.getEmpNo(), "EMPLOYEE", emp.getBizRegNo());
 		return AdminLoginResponse.fromEmployee(emp, token);
 	}
 
 	// 위조 불가능한 무작위 세션 토큰을 발급해 DB에 저장한다 — 로그아웃/비밀번호 변경 시
 	// 이 row만 지우면 즉시 무효화할 수 있고(JWT와 달리 서버가 상태를 들고 있음),
 	// 여러 대의 WAS로 이중화해도 같은 DB를 보므로 별도 처리 없이 그대로 동작한다.
-	private String issueSession(String adminId, String adminRole, String bizRegNo) {
+	private String issueSession(String adminNo, String adminRole, String bizRegNo) {
 		byte[] randomBytes = new byte[32];
 		secureRandom.nextBytes(randomBytes);
 		String token = Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
 		LocalDateTime now = LocalDateTime.now();
 		adminSessionRepository.save(AdminSession.builder()
 				.token(token)
-				.adminId(adminId)
+				.adminNo(adminNo)
 				.adminRole(adminRole)
 				.bizRegNo(bizRegNo)
 				.issuedDt(now)
@@ -123,9 +123,9 @@ public class AdminService {
 
 	@Transactional
 	public void changePassword(String adminId, PasswordChangeRequest request, CurrentAdmin requester) {
-		checkSelfOrSuper(adminId, requester);
-		AdminUsr admin = adminUsrRepository.findById(adminId)
+		AdminUsr admin = adminUsrRepository.findByAdminIdAndUseYn(adminId, "Y")
 				.orElseThrow(() -> new ResourceNotFoundException("관리자 계정을 찾을 수 없습니다: " + adminId));
+		checkSelfOrSuper(admin.getAdminNo(), requester);
 		if (!passwordEncoder.matches(request.currentPassword(), admin.getPasswordHash())) {
 			throw new BusinessException(HttpStatus.UNAUTHORIZED, WRONG_CURRENT_PASSWORD_MESSAGE);
 		}
@@ -138,9 +138,9 @@ public class AdminService {
 
 	@Transactional
 	public void changeEmployeePassword(String empId, PasswordChangeRequest request, CurrentAdmin requester) {
-		checkSelfOrSuper(empId, requester);
-		BizEmp emp = bizEmpRepository.findById(empId)
+		BizEmp emp = bizEmpRepository.findByEmpIdAndUseYn(empId, "Y")
 				.orElseThrow(() -> new ResourceNotFoundException("직원 계정을 찾을 수 없습니다: " + empId));
+		checkSelfOrSuper(emp.getEmpNo(), requester);
 		if (!passwordEncoder.matches(request.currentPassword(), emp.getPasswordHash())) {
 			throw new BusinessException(HttpStatus.UNAUTHORIZED, WRONG_CURRENT_PASSWORD_MESSAGE);
 		}
@@ -153,23 +153,24 @@ public class AdminService {
 
 	// 비밀번호 변경 전, 입력한 현재 비밀번호가 맞는지만 확인한다 (실제 변경은 하지 않음).
 	public PasswordVerifyResponse verifyPassword(String adminId, PasswordVerifyRequest request, CurrentAdmin requester) {
-		checkSelfOrSuper(adminId, requester);
-		AdminUsr admin = adminUsrRepository.findById(adminId)
+		AdminUsr admin = adminUsrRepository.findByAdminIdAndUseYn(adminId, "Y")
 				.orElseThrow(() -> new ResourceNotFoundException("관리자 계정을 찾을 수 없습니다: " + adminId));
+		checkSelfOrSuper(admin.getAdminNo(), requester);
 		return new PasswordVerifyResponse(passwordEncoder.matches(request.password(), admin.getPasswordHash()));
 	}
 
 	public PasswordVerifyResponse verifyEmployeePassword(String empId, PasswordVerifyRequest request, CurrentAdmin requester) {
-		checkSelfOrSuper(empId, requester);
-		BizEmp emp = bizEmpRepository.findById(empId)
+		BizEmp emp = bizEmpRepository.findByEmpIdAndUseYn(empId, "Y")
 				.orElseThrow(() -> new ResourceNotFoundException("직원 계정을 찾을 수 없습니다: " + empId));
+		checkSelfOrSuper(emp.getEmpNo(), requester);
 		return new PasswordVerifyResponse(passwordEncoder.matches(request.password(), emp.getPasswordHash()));
 	}
 
 	// 슈퍼관리자가 아니면 본인 계정의 비밀번호만 변경/확인할 수 있다.
 	// requester는 요청 바디가 아니라 AdminAuthInterceptor가 세션 토큰으로 확인한 신원이라 위조할 수 없다.
-	private void checkSelfOrSuper(String targetId, CurrentAdmin requester) {
-		if (!requester.isSuper() && !requester.adminId().equals(targetId)) {
+	// targetAdminNo는 admin_no 또는 emp_no(UUID) — 이메일이 아니라 세션과 동일한 식별자로 비교한다.
+	private void checkSelfOrSuper(String targetAdminNo, CurrentAdmin requester) {
+		if (!requester.isSuper() && !requester.adminNo().equals(targetAdminNo)) {
 			throw new BusinessException(HttpStatus.FORBIDDEN, FORBIDDEN_MESSAGE);
 		}
 	}
@@ -178,8 +179,11 @@ public class AdminService {
 	// 실제로 그 키로 코드를 만들어낼 수 있음을 confirmTotp에서 증명해야 저장된다.
 	public TotpSetupResponse setupTotp(CurrentAdmin requester) {
 		requireSuper(requester);
+		AdminUsr admin = adminUsrRepository.findById(requester.adminNo())
+				.orElseThrow(() -> new ResourceNotFoundException("관리자 계정을 찾을 수 없습니다: " + requester.adminNo()));
 		String secret = TotpUtil.generateSecret();
-		return new TotpSetupResponse(secret, buildOtpauthUri(requester.adminId(), secret));
+		String label = admin.getAdminId() != null ? admin.getAdminId() : admin.getAdminNo();
+		return new TotpSetupResponse(secret, buildOtpauthUri(label, secret));
 	}
 
 	// 구글 OTP 등 인증 앱이 QR로 읽을 수 있는 표준 otpauth:// URI를 만든다.
@@ -195,8 +199,8 @@ public class AdminService {
 		if (!TotpUtil.verifyCode(request.secret(), request.code())) {
 			throw new BusinessException(HttpStatus.BAD_REQUEST, TOTP_INVALID_MESSAGE);
 		}
-		AdminUsr admin = adminUsrRepository.findById(requester.adminId())
-				.orElseThrow(() -> new ResourceNotFoundException("관리자 계정을 찾을 수 없습니다: " + requester.adminId()));
+		AdminUsr admin = adminUsrRepository.findById(requester.adminNo())
+				.orElseThrow(() -> new ResourceNotFoundException("관리자 계정을 찾을 수 없습니다: " + requester.adminNo()));
 		admin.setTotpSecret(request.secret());
 		adminUsrRepository.save(admin);
 	}
