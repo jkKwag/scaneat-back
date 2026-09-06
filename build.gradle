@@ -43,7 +43,7 @@ dependencies {
 	implementation 'org.bouncycastle:bcprov-jdk18on:1.78.1'
 
 	// 패스키(지문/생체인증) 등록·로그인 시 WebAuthn 자격증명 검증용
-	implementation 'com.webauthn4j:webauthn4j-core:0.31.10.RELEASE'
+	implementation 'com.webauthn4j:webauthn4j-core:0.28.6.RELEASE'
 
 	runtimeOnly 'org.postgresql:postgresql'
 
