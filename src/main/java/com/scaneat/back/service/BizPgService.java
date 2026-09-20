@@ -90,4 +90,13 @@ public class BizPgService {
 				.map(bizPg -> pgSecretCrypto.decrypt(bizPg.getSecretKeyEnc()))
 				.orElse(null);
 	}
+
+	// 결제위젯을 열 때 쓰는 클라이언트키 — 시크릿키와 달리 공개돼도 되는 값이라 손님(비로그인)도
+	// 조회할 수 있다. 등록된 게 없으면 null — 프론트가 플랫폼 고정 클라이언트키로 폴백한다.
+	public String getActiveClientKey(String bizRegNo) {
+		return bizPgRepository.findById_BizRegNoAndStatus(bizRegNo, "ACTIVE")
+				.map(BizPg::getClientKey)
+				.filter(k -> k != null && !k.isBlank())
+				.orElse(null);
+	}
 }

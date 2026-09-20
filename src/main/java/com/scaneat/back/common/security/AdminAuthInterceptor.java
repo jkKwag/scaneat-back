@@ -74,6 +74,11 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
 			if (uri.endsWith("/access-grants") || uri.endsWith("/staff-call")) {
 				return false;
 			}
+			// 결제위젯용 클라이언트키는 공개키라 손님(비로그인, QR 주문)도 조회할 수 있어야 한다 —
+			// 아래 "/pg" 전체를 인증 요구로 묶는 규칙보다 먼저 걸러야 한다.
+			if (uri.endsWith("/pg/client-key")) {
+				return false;
+			}
 			if (uri.endsWith("/employees") || uri.endsWith("/seats/admin") || uri.endsWith("/seat-status")
 					|| uri.endsWith("/approvals") || uri.endsWith("/registration-cert") || uri.contains("/subscription")
 					|| uri.contains("/pg")) {
