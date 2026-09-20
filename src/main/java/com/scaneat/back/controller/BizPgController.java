@@ -26,6 +26,13 @@ public class BizPgController {
 
 	private final BizPgService bizPgService;
 
+	// 손님(QR 주문, 비로그인)이 결제위젯을 열 때 쓸 클라이언트키 조회 — 공개키라 인증 없이 열어둔다
+	// (AdminAuthInterceptor에서 "/pg/client-key"만 예외 처리).
+	@GetMapping("/{bizno}/pg/client-key")
+	public ApiResponse<String> getClientKey(@PathVariable String bizno) {
+		return ApiResponse.ok(bizPgService.getActiveClientKey(bizno));
+	}
+
 	@GetMapping("/{bizno}/pg")
 	public ApiResponse<List<BizPgResponse>> getConnections(@PathVariable String bizno) {
 		return ApiResponse.ok(bizPgService.getConnections(bizno));
