@@ -24,11 +24,13 @@ public class TossPaymentsClient {
 		this.secretKey = secretKey;
 	}
 
-	public Map<String, Object> confirmPayment(String paymentKey, String orderId, BigDecimal amount) {
+	// bizSecretKey가 있으면(업체가 자체 PG를 등록한 경우) 그 키로, 없으면(null) 플랫폼 공용 키로 승인한다 —
+	// 주문결제(PaymentService) 전용. 구독료(BizSubsptService)는 항상 아래 오버로드(공용 키)를 쓴다.
+	public Map<String, Object> confirmPayment(String bizSecretKey, String paymentKey, String orderId, BigDecimal amount) {
 		try {
 			return tossRestClient.post()
 					.uri("/v1/payments/confirm")
-					.header(HttpHeaders.AUTHORIZATION, "Basic " + encodedAuth())
+					.header(HttpHeaders.AUTHORIZATION, "Basic " + encodedAuth(resolveSecretKey(bizSecretKey)))
 					.body(Map.of(
 							"paymentKey", paymentKey,
 							"orderId", orderId,
@@ -42,11 +44,11 @@ public class TossPaymentsClient {
 		}
 	}
 
-	public Map<String, Object> cancelPayment(String paymentKey, String cancelReason) {
+	public Map<String, Object> cancelPayment(String bizSecretKey, String paymentKey, String cancelReason) {
 		try {
 			return tossRestClient.post()
 					.uri("/v1/payments/{paymentKey}/cancel", paymentKey)
-					.header(HttpHeaders.AUTHORIZATION, "Basic " + encodedAuth())
+					.header(HttpHeaders.AUTHORIZATION, "Basic " + encodedAuth(resolveSecretKey(bizSecretKey)))
 					.body(Map.of("cancelReason", cancelReason))
 					.retrieve()
 					.body(Map.class);
@@ -134,5 +136,9 @@ public class TossPaymentsClient {
 
 	private String encodedAuth(String key) {
 		return Base64.getEncoder().encodeToString((key + ":").getBytes(StandardCharsets.UTF_8));
+	}
+
+	private String resolveSecretKey(String override) {
+		return override != null && !override.isBlank() ? override : this.secretKey;
 	}
 }

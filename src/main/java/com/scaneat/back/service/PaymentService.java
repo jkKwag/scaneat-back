@@ -36,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class PaymentService {
 
 	private final TossPaymentsClient tossPaymentsClient;
+	private final BizPgService bizPgService;
 	private final UsrOrderRepository usrOrderRepository;
 	private final UsrPaymentRepository usrPaymentRepository;
 	private final UsrPaymentPgRepository usrPaymentPgRepository;
@@ -53,8 +54,13 @@ public class PaymentService {
 			throw new BusinessException("결제할 주문 정보가 없습니다.");
 		}
 
+		// 토스 실제 호출 전에 bizRegNo를 먼저 확정해야 어느 업체의 PG키를 쓸지 알 수 있다 —
+		// 기존 주문결제면 그 주문의 bizRegNo, 새 주문(장바구니)이면 newOrder에 실려온 bizRegNo를 쓴다.
+		String bizRegNo = !orders.isEmpty() ? orders.get(0).getBizRegNo() : request.newOrder().bizRegNo();
+		String bizSecretKey = bizPgService.getActiveSecretKey(bizRegNo);
+
 		Map<String, Object> result = tossPaymentsClient.confirmPayment(
-				request.paymentKey(), request.orderId(), request.amount());
+				bizSecretKey, request.paymentKey(), request.orderId(), request.amount());
 		log.info("[Toss] confirm raw response: {}", result);
 
 		// 결제 승인이 실제로 성공했을 때만 주문을 생성한다 — 검증 전에 미리 만들어두지 않는다.
@@ -116,7 +122,8 @@ public class PaymentService {
 		UsrPayment payment = usrPaymentRepository.findById(paymentKey)
 				.orElseThrow(() -> new ResourceNotFoundException("결제 정보를 찾을 수 없습니다: " + paymentKey));
 
-		Map<String, Object> result = tossPaymentsClient.cancelPayment(paymentKey, request.cancelReason());
+		String bizSecretKey = bizPgService.getActiveSecretKey(payment.getBizRegNo());
+		Map<String, Object> result = tossPaymentsClient.cancelPayment(bizSecretKey, paymentKey, request.cancelReason());
 		log.info("[Toss] cancel raw response: {}", result);
 
 		payment.setStatus((String) result.get("status"));
