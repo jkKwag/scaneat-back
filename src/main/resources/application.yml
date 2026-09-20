@@ -36,6 +36,10 @@ app:
     rp-id: ${WEBAUTHN_RP_ID:jkscaneat.com}
     rp-name: JK Scaneat
     origin: ${WEBAUTHN_ORIGIN:https://www.jkscaneat.com}
+  pg:
+    # 업체별 PG 시크릿키 암호화용 키(base64, AES-256 = 32byte). EC2에 아직 등록 안 됐어도
+    # 앱 전체는 정상 기동하고, PG 키 등록/조회 시도 시에만 에러가 난다.
+    encryption-key: ${PG_SECRET_ENC_KEY:}
 
 kakao:
   # 기본값을 비워둬서, 이 값들이 EC2에 아직 등록 안 됐어도 앱 전체가 기동 실패하지 않게 한다 —
