@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Map;
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -23,11 +24,13 @@ public class TossPaymentsClient {
 		this.secretKey = secretKey;
 	}
 
-	public Map<String, Object> confirmPayment(String paymentKey, String orderId, BigDecimal amount) {
+	// bizSecretKey가 있으면(업체가 자체 PG를 등록한 경우) 그 키로, 없으면(null) 플랫폼 공용 키로 승인한다 —
+	// 주문결제(PaymentService) 전용. 구독료(BizSubsptService)는 항상 아래 오버로드(공용 키)를 쓴다.
+	public Map<String, Object> confirmPayment(String bizSecretKey, String paymentKey, String orderId, BigDecimal amount) {
 		try {
 			return tossRestClient.post()
 					.uri("/v1/payments/confirm")
-					.header(HttpHeaders.AUTHORIZATION, "Basic " + encodedAuth())
+					.header(HttpHeaders.AUTHORIZATION, "Basic " + encodedAuth(resolveSecretKey(bizSecretKey)))
 					.body(Map.of(
 							"paymentKey", paymentKey,
 							"orderId", orderId,
@@ -41,11 +44,11 @@ public class TossPaymentsClient {
 		}
 	}
 
-	public Map<String, Object> cancelPayment(String paymentKey, String cancelReason) {
+	public Map<String, Object> cancelPayment(String bizSecretKey, String paymentKey, String cancelReason) {
 		try {
 			return tossRestClient.post()
 					.uri("/v1/payments/{paymentKey}/cancel", paymentKey)
-					.header(HttpHeaders.AUTHORIZATION, "Basic " + encodedAuth())
+					.header(HttpHeaders.AUTHORIZATION, "Basic " + encodedAuth(resolveSecretKey(bizSecretKey)))
 					.body(Map.of("cancelReason", cancelReason))
 					.retrieve()
 					.body(Map.class);
@@ -109,7 +112,33 @@ public class TossPaymentsClient {
 		}
 	}
 
+	// 업체가 입력한 시크릿키가 실제로 유효한지 확인할 때 쓴다. 존재할 리 없는 임의의 paymentKey로
+	// 결제조회를 호출해서, 인증은 통과하되 "그런 결제건이 없다"(404)는 응답이 오면 키가 유효한 것으로 본다.
+	// 키 자체가 틀렸다면 401(인증실패)이 온다. 실제 결제/청구를 발생시키지 않고 키만 검증하는 방법이라
+	// 토스에 별도 "키 검증" 전용 API가 없는 상황에서 가장 부작용이 적다.
+	public boolean verifySecretKey(String candidateSecretKey) {
+		String fakePaymentKey = "verify-" + UUID.randomUUID();
+		try {
+			tossRestClient.get()
+					.uri("/v1/payments/{paymentKey}", fakePaymentKey)
+					.header(HttpHeaders.AUTHORIZATION, "Basic " + encodedAuth(candidateSecretKey))
+					.retrieve()
+					.toBodilessEntity();
+			return true;
+		} catch (RestClientResponseException ex) {
+			return ex.getStatusCode().value() == 404;
+		}
+	}
+
 	private String encodedAuth() {
-		return Base64.getEncoder().encodeToString((secretKey + ":").getBytes(StandardCharsets.UTF_8));
+		return encodedAuth(secretKey);
+	}
+
+	private String encodedAuth(String key) {
+		return Base64.getEncoder().encodeToString((key + ":").getBytes(StandardCharsets.UTF_8));
+	}
+
+	private String resolveSecretKey(String override) {
+		return override != null && !override.isBlank() ? override : this.secretKey;
 	}
 }

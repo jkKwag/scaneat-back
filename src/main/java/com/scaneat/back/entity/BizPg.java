@@ -1,0 +1,63 @@
+package com.scaneat.back.entity;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import java.time.LocalDateTime;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
+
+// 사업장별 PG(결제대행사) 연동 정보 — 사업장 하나가 PG사별로 하나씩 연결 가능(PK에 pg_provider 포함).
+// 손님이 가게에 결제하는 주문결제에서만 쓰고, 사업장이 Scaneat에 내는 구독료 결제(BizSubspt)는
+// 여기와 무관하게 항상 플랫폼 공용 키를 쓴다. secretKeyEnc는 조회 시점에 복호화해서 PG 호출에
+// 써야 하므로(단방향 해시 불가) AES로 암호화해서 저장한다.
+@Entity
+@Table(name = "tb_biz_pg")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class BizPg {
+
+	@EmbeddedId
+	private BizPgId id;
+
+	@Column(name = "secret_key_enc", columnDefinition = "TEXT", nullable = false)
+	private String secretKeyEnc;
+
+	@Column(name = "client_key", length = 200)
+	private String clientKey;
+
+	// ACTIVE / INACTIVE — 한 사업장에 PG사별로 행이 있을 수 있지만, 실제 결제에는
+	// ACTIVE 상태인 것만 쓴다.
+	@ColumnDefault("'ACTIVE'")
+	@Column(name = "status", length = 20, nullable = false)
+	private String status;
+
+	@Column(name = "verified_dt")
+	private LocalDateTime verifiedDt;
+
+	@Column(name = "reg_usr_id", length = 50)
+	private String regUsrId;
+
+	@Column(name = "reg_dt", nullable = false)
+	private LocalDateTime regDt;
+
+	@Column(name = "reg_ip", length = 50)
+	private String regIp;
+
+	@Column(name = "upd_usr_id", length = 50)
+	private String updUsrId;
+
+	@Column(name = "upd_dt")
+	private LocalDateTime updDt;
+
+	@Column(name = "upd_ip", length = 50)
+	private String updIp;
+}
